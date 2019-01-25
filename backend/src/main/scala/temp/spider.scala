@@ -1,0 +1,5 @@
+package temp
+
+object spider {
+
+}
