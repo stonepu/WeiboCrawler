@@ -14,7 +14,20 @@ import com.neo.sk.todos2018.common.AppSettings
   * Time: 15:17
   */
 object UserDAO {
+
   def getUserByName(name:String)={
+    //val ss = AppSettings.userMap.get(name)
     Future.successful(AppSettings.userMap.get(name))
+  }
+
+  def addUser(username: String, password: String) = {
+    val addUser =
+      tUser += rUser(Some(username), Some(password))
+    db.run(addUser)
+  }
+
+  def getUserByDBName(name: String)={
+    val username = tUser.filter(_.username === name).map(_.password).result
+    db.run(username)
   }
 }

@@ -9,7 +9,7 @@ object Dependencies {
 
   val slickV = "3.2.3"
   val akkaV = "2.5.12"
-  val akkaHttpV = "10.1.1"
+  val akkaHttpV = "10.1.0"
   val scalaXmlV = "1.1.0"
   val circeVersion = "0.9.3"
 
@@ -52,8 +52,9 @@ object Dependencies {
   val postgresql = "org.postgresql" % "postgresql" % "9.4.1208"
   val asynchttpclient = "org.asynchttpclient" % "async-http-client" % "2.0.32"
   val ehcache = "net.sf.ehcache" % "ehcache" % "2.10.4"
-
-
+  val spray = "io.spray" %% "spray-json" % "1.3.2"
+  val jsoup = "org.jsoup" % "jsoup" % "1.11.3"
+  val apache = "org.apache.httpcomponents" % "httpclient" % "4.5.5"
 
   val backendDependencies =
     Dependencies.akkaSeq ++
@@ -72,7 +73,10 @@ object Dependencies {
         Dependencies.codec,
         Dependencies.postgresql,
         Dependencies.asynchttpclient,
-        Dependencies.ehcache
+        Dependencies.ehcache,
+        Dependencies.spray,
+        Dependencies.jsoup,
+        Dependencies.apache
       )
 
 

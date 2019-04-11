@@ -7,6 +7,7 @@ import akka.http.scaladsl.server.directives.BasicDirectives
 import com.neo.sk.todos2018.common.AppSettings
 import com.neo.sk.todos2018.common.Constant.UserRolesType
 import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
+import com.neo.sk.todos2018.ptcl.ByrProtocol.ByrArticleInfo
 import com.neo.sk.todos2018.shared.ptcl.ErrorRsp
 import com.neo.sk.todos2018.utils.{CirceSupport, SessionSupport}
 import org.slf4j.LoggerFactory
@@ -43,6 +44,18 @@ object SessionBase{
         )
       }
     }
+  
+  /*case class ArticleSession(
+                           articleInfo: ByrArticleInfo
+                           ) {
+    def toSessionMap: Map[String, String] = {
+      Map(
+        SessionTypeKey -> SessionKeys.sessionType,
+        SessionKeys.name -> articleInfo.title,
+      )
+    }
+  }*/
+  
 }
 
 trait SessionBase extends SessionSupport with ServiceUtils{
@@ -98,4 +111,13 @@ trait SessionBase extends SessionSupport with ServiceUtils{
         complete(noSessionError())
     }
   }
+  
+  /*def articleAuth(f: ByrArticleInfo =>server.Route) = loggingAction{ ctx =>
+    optionalToDoSession{
+      case Some(session) =>
+        f(session)
+      case None =>
+        complete(noSessionError())
+    }
+  }*/
 }

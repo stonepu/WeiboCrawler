@@ -57,8 +57,9 @@ lazy val frontend = (project in file("frontend"))
       //"com.lihaoyi" %%% "utest" % "0.3.0" % "test"
       "in.nvilla" %%% "monadic-html" % "0.4.0-RC1" withSources(),
       "com.lihaoyi" %%% "scalatags" % "0.6.7" withSources(),
-      "com.github.japgolly.scalacss" %%% "core" % "0.5.5" withSources()
-
+      "com.github.japgolly.scalacss" %%% "core" % "0.5.5" withSources(),
+      //"io.spray" %%% "spray-jason"
+      "org.scalaj" %% "scalaj-http" % "2.4.1"
     )
   )
   .dependsOn(sharedJs)
@@ -72,7 +73,7 @@ lazy val backend = (project in file("backend")).enablePlugins(PackPlugin)
   .settings(commonSettings: _*)
   .settings(
     mainClass in reStart := Some(projectMainClass),
-    javaOptions in reStart += "-Xmx2g"
+    javaOptions in reStart += "-Xmx1024m"
   )
   .settings(name := "backend")
   .settings(
@@ -81,7 +82,7 @@ lazy val backend = (project in file("backend")).enablePlugins(PackPlugin)
     //packSettings,
     // [Optional] Creating `hello` command that calls org.mydomain.Hello#main(Array[String])
     packMain := Map("todos2018" -> projectMainClass),
-    packJvmOpts := Map("todos2018" -> Seq("-Xmx64m", "-Xms32m")),
+    packJvmOpts := Map("todos2018" -> Seq("-Xmx512m", "-Xms32m")),
     packExtraClasspath := Map("todos2018" -> Seq("."))
   )
   .settings(

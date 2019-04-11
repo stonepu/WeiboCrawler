@@ -10,4 +10,15 @@ object UserProtocol {
                          userName:String,
                          pwd:String
                          )
+
+  case class UserSignupReq(
+                          username:String,
+                          pwd:String,
+                          pwdAgain:String
+                          )
+
+  case class SinaLoginReq(
+                         username: String,
+                         password: String
+                         )
 }

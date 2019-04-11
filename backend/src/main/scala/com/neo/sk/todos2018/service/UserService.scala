@@ -10,7 +10,7 @@ import com.neo.sk.todos2018.models.dao.UserDAO
 import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
 import com.neo.sk.todos2018.service.SessionBase.{SessionKeys, SessionTypeKey, ToDoListSession}
 import com.neo.sk.todos2018.shared.ptcl.{ErrorRsp, SuccessRsp}
-import com.neo.sk.todos2018.shared.ptcl.UserProtocol.UserLoginReq
+import com.neo.sk.todos2018.shared.ptcl.UserProtocol.{UserLoginReq, UserSignupReq}
 
 import scala.concurrent.Future
 import scala.language.postfixOps
@@ -42,18 +42,19 @@ trait UserService extends ServiceUtils with SessionBase {
         complete(parseError)
       case Right(req) =>
         dealFutureResult(
-          UserDAO.getUserByName(req.userName).map{user=>
-            if(user.isEmpty){
+          UserDAO.getUserByDBName(req.userName).map{pwd=>
+            if(pwd.isEmpty){
               complete(ErrorRsp(100102,"userName not exist"))
             }else{
-              if(user.get==req.pwd){
-                val session = ToDoListSession(UserBaseInfo(req.userName),System.currentTimeMillis()).toSessionMap
-                addSession(session){
+              val ss = pwd.toList.head
+              if (pwd.toList.head.getOrElse("") == req.pwd) {
+                val session = ToDoListSession(UserBaseInfo(req.userName), System.currentTimeMillis()).toSessionMap
+                addSession(session) {
                   log.info(s"user ${req.userName} login success")
                   complete(SuccessRsp())
                 }
-              }else{
-                complete(ErrorRsp(100103,"pwd is wrong"))
+              }else {
+                complete(ErrorRsp(100103, "pwd is wrong"))
               }
             }
           }
@@ -71,9 +72,38 @@ trait UserService extends ServiceUtils with SessionBase {
     }
   }
 
+  //用户注册
+
+  private val userSubmit=(path("userSubmit") & pathEndOrSingleSlash & post) {
+    entity(as[Either[Error, UserSignupReq]]) {
+      case Left(error) =>
+        log.warn(s"some error: $error")
+        complete(parseError)
+      case Right(req) =>
+        dealFutureResult(
+          UserDAO.getUserByDBName(req.username).map{ user =>
+            if(!user.isEmpty){
+              complete(ErrorRsp(100113, "user already exists!"))
+            }else{
+              if(req.pwdAgain == req.pwd){
+                val session = ToDoListSession(UserBaseInfo(req.username), System.currentTimeMillis()).toSessionMap
+                addSession(session){
+                  log.info(s"${req.username} sign up success")
+                  UserDAO.addUser(req.username, req.pwd)
+                  complete(SuccessRsp())
+                }
+              }else{
+                complete(ErrorRsp(100114, "the two passwords does not equal"))
+              }
+            }
+          }
+        )
+    }
+  }
+
   val userRoutes: Route =
     pathPrefix("user") {
-      userLogin ~ userLogout
+      userLogin ~ userLogout ~ userSubmit
     }
 
 }

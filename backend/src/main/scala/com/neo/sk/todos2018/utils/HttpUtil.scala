@@ -11,7 +11,7 @@ import io.netty.handler.ssl.util.SimpleTrustManagerFactory
 import org.asynchttpclient._
 import org.asynchttpclient.request.body.multipart.FilePart
 import org.slf4j.LoggerFactory
-
+import scala.language.experimental.macros
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
@@ -85,7 +85,31 @@ trait HttpUtil {
       val msg = s"getRequestSend http failed url = $uri, status = ${response.getStatusCode}, text = ${response.getStatusText}, body = ${body.substring(0, Math.min(bodyLength, 1024))}"
       log.warn(msg)
     }
+    if(body.length<100) println("the failed body is " + body)
     body
+  }
+
+  private def getCookies(response: Response, charset: Charset)={
+    val cookies = response.getCookies
+    val headers = response.getHeaders
+    val cookieString = cookies.get(0).toString
+    if (response.getStatusCode != 200) {
+      val uri = response.getUri
+      val cookieLength = cookieString.length
+      val msg = s"getRequestSend http failed url = $uri, status = ${response.getStatusCode}, text = ${response.getStatusText}, body = ${cookieString.substring(0, Math.min(cookieLength, 1024))}"
+      log.warn(msg)
+    }
+    cookieString
+  }
+
+  private def executeCookie(methodName: String,
+    request: BoundRequestBuilder,
+    charset: Charset
+  )(implicit executor: ExecutionContext) = {
+    request.scalaExecute().map { response =>
+      Right(getCookies(response, charset))
+      //parseResp(response, charset)
+    }.recover { case e: Throwable => Left(e) }
   }
 
   private def executeRequest(
@@ -95,9 +119,11 @@ trait HttpUtil {
   )(implicit executor: ExecutionContext) = {
     request.scalaExecute().map { response =>
       Right(parseResp(response, charset))
+      //parseResp(response, charset)
     }.recover { case e: Throwable => Left(e) }
   }
-
+  
+  
   def postJsonRequestSend(
     methodName: String,
     url: String,
@@ -121,6 +147,27 @@ trait HttpUtil {
       setBody(jsonStr)
     headers.foreach(h => request.addHeader(h._1,h._2))
     executeRequest(methodName, request, cs)
+  }
+
+  def SimulatedLogin(
+                      methodName: String,
+                      url: String,
+                      parameters: List[(String, String)],
+                      jsonStr: String,
+                      headers:List[(String,String)] = List(("Content-Type","application/json")),
+                      charsetName: String = "UTF-8"
+                    )(implicit executor: ExecutionContext): Future[Either[Throwable, String]] = {
+    val cs = Charset.forName(charsetName)
+    val request = ahClient.
+      preparePost(url).
+      setFollowRedirect(true).
+      setRequestTimeout(20 * 1000).
+      setCharset(cs).
+      addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava).
+      setBody(jsonStr)
+    headers.foreach(h => request.addHeader(h._1,h._2))
+    //executeRequest(methodName, request, cs)
+    executeCookie(methodName, request, cs)
   }
 
   def getRequestSend(

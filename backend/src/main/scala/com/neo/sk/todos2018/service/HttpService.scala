@@ -6,13 +6,13 @@ import akka.http.scaladsl.server.Route
 import akka.stream.scaladsl.{Flow, Sink, Source}
 import akka.stream.{Materializer, OverflowStrategy}
 import akka.util.Timeout
-
 import scala.concurrent.ExecutionContextExecutor
 
 
 trait HttpService extends ResourceService
   with UserService
   with ToDoListService
+  with ByrService
 {
 
   implicit val system: ActorSystem
@@ -32,7 +32,7 @@ trait HttpService extends ResourceService
         pathEndOrSingleSlash {
           getFromResource("html/index.html")
         } ~
-          resourceRoutes ~ userRoutes ~ listRoutes
+          resourceRoutes ~ userRoutes ~ listRoutes ~ ByrRoutes
       }
     }
 

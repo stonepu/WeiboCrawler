@@ -6,4 +6,9 @@ package com.neo.sk.todos2018
   * Time: 10:40
   */
 package object models {
+  case class sectionModel(
+                    section: String,
+                    boardList: List[(String, String)]
+                    )
+
 }

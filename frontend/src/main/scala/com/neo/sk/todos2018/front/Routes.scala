@@ -10,6 +10,8 @@ object Routes {
     val baseUrl = base + "/user"
     val login = baseUrl + "/userLogin"
     val logout = baseUrl + "/userLogout"
+    val submit = baseUrl + "/userSubmit"
+    //val back = baseUrl + "/userBack"
   }
 
   object List {
@@ -17,6 +19,12 @@ object Routes {
     val getList = baseUrl + "/getList"
     val addRecord = baseUrl + "/addRecord"
     val delRecord = baseUrl + "/delRecord"
+  }
+  
+  object BYRbbs {
+    val baseUrl = base + "/byr"
+    val search = baseUrl + "/kkk"
+    val getArticleList = baseUrl + "/getList"
   }
 
 }

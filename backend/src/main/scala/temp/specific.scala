@@ -1,5 +1,0 @@
-package temp
-
-object specific {
-
-}
