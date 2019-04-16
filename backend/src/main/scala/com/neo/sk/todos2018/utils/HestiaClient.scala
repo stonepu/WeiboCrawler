@@ -31,7 +31,7 @@ object HestiaClient extends HttpUtil {
   private val hestiaBaseUrl = hestiaProtocol + "://" + hestiaDomain
   private val appId = hestiaAppId
   private val secureKey = hestiaSecureKey
-  private val hestiaImgPrefix = hestiaProtocol + "://" + hestiaAddress + s"/hestia/files/image/$appId/"
+  private val hestiaImgPrefix = hestiaProtocol + "://" + hestiaAddress + s"/hestia/files/img/$appId/"
 
   private val log = LoggerFactory.getLogger(this.getClass)
 

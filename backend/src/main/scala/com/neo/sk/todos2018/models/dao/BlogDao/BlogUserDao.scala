@@ -23,7 +23,7 @@ object BlogUserDao {
               photo: Option[String], follow: Option[String],
               fans: Option[String], password: Option[String] = Some("123")) = {
     val addUser =
-      tBloguser += rBloguser(nickname, homeUrl, imageUrl, gender, certification, introduction,
+      tBloguser += rBloguser(nickname, homeUrl, imageUrl, Some(gender.get.toString), certification, introduction,
            region, birth, photo, follow, fans, password)
     db.run(addUser)
   }
@@ -44,13 +44,13 @@ object BlogUserDao {
         addUser(nickname, homeUrl, imageUrl, gender, certification, introduction,
           region, birth, photo, follow, fans, password)
       } else{
-        val update = tBloguser.filter(_.homeurl === homeUrl).
+        val updates = tBloguser.filter(_.homeurl === homeUrl).
           map(p => (p.nickname, p.homeurl, p.imageurl, p.gender,
                     p.certification, p.introduction, p.region, p.birth,
                     p.photo, p.follow, p.fans, p.password))
-          .update(nickname, homeUrl, imageUrl, gender, certification, introduction,
-            region, birth, photo, follow, fans, password)
-        db.run(update)
+            .update((nickname, homeUrl, imageUrl, Some(gender.get.toString), certification,
+              introduction, region, birth, photo, follow, fans, password))
+        db.run(updates)
       }
     }
   }

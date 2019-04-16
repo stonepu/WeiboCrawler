@@ -300,35 +300,36 @@ object crawl extends HttpUtil {
 			val contents = doc.getElementsByClass("c").drop(1).dropRight(2)
       //println(s"===contents.length = ${contents.length}=====")
       //println(contents(0))
-			for(content<- contents){
-				var time = "None"
-				if(content.getElementsByClass("ct").length>0)
-					time = content.getElementsByClass("ct")(0).text()
-				val patternLike = "赞(.*?)]".r
-				var like = patternLike.findFirstIn(content.toString).getOrElse("12None3").drop(2).dropRight(1)
-				like = if(like.length > 8) "0" else like
-				val patternForward = "转发(.*?)]".r
-				var forward = patternForward.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
-				forward = if(forward.length > 8) "0" else forward
-				val patternComment = "评论(.*?)]".r
-				var comment = patternComment.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
-				comment = if(comment.length > 8) "0" else comment
-        if(content.getElementsByClass("cc").length == 0){
-          println("got wrong content!")
-          println(content)
-        }
-        val commentUrl = content.getElementsByClass("cc")(0).attr("href")
-				BlogDao.updateBlog(Some(name), Some(url), Some(content.toString),
-					Some(time), Some(like), Some(forward), Some(comment), Some(commentUrl))
-				/*println("文章信息=======")
-				println(name)
-				println(url)
-				println(time)
-				println(s"like: $like")
-				println(s"forward: $forward")
-				println(s"comment: $comment")
-				println(s"commentUrl: $commentUrl")*/
-			}
+			if(contents.length > 1)
+				for(content<- contents){
+					var time = "None"
+					if(content.getElementsByClass("ct").length>0)
+						time = content.getElementsByClass("ct")(0).text()
+					val patternLike = "赞(.*?)]".r
+					var like = patternLike.findFirstIn(content.toString).getOrElse("12None3").drop(2).dropRight(1)
+					like = if(like.length > 8) "0" else like
+					val patternForward = "转发(.*?)]".r
+					var forward = patternForward.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
+					forward = if(forward.length > 8) "0" else forward
+					val patternComment = "评论(.*?)]".r
+					var comment = patternComment.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
+					comment = if(comment.length > 8) "0" else comment
+					if(content.getElementsByClass("cc").length == 0){
+						println("got wrong content!")
+						println(content)
+					}
+					val commentUrl = content.getElementsByClass("cc")(0).attr("href")
+					BlogDao.updateBlog(Some(name), Some(url), Some(content.toString),
+						Some(time), Some(like), Some(forward), Some(comment), Some(commentUrl))
+					/*println("文章信息=======")
+					println(name)
+					println(url)
+					println(time)
+					println(s"like: $like")
+					println(s"forward: $forward")
+					println(s"comment: $comment")
+					println(s"commentUrl: $commentUrl")*/
+				}
 		}
 	}
 

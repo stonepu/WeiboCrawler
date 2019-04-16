@@ -27,4 +27,11 @@ object Routes {
     val getArticleList = baseUrl + "/getList"
   }
 
+  object Blog{
+    val baseUrl = base + "/blog"
+    val getContent = baseUrl + "/getContent"
+    val getContentByPage = baseUrl + "/getContentByPage"
+
+  }
+
 }

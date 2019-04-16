@@ -22,12 +22,12 @@ object UserDAO {
 
   def addUser(username: String, password: String) = {
     val addUser =
-      tUser += rUser(Some(username), Some(password))
+      tBloguser += rBloguser(nickname = Some(username), password = Some(password))
     db.run(addUser)
   }
 
   def getUserByDBName(name: String)={
-    val username = tUser.filter(_.username === name).map(_.password).result
+    val username = tBloguser.filter(_.nickname === name).map(_.password).result
     db.run(username)
   }
 }

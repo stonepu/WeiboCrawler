@@ -28,7 +28,7 @@ object HttpClientUtil {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   private val httpHeaders = List[Header](
-    new BasicHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"),
+    new BasicHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,img/webp,img/apng,*/*;q=0.8"),
     new BasicHeader("Accept-Encoding", "gzip, deflate"),
     new BasicHeader("Accept-Language", "zh-CN,zh;q=0.8,en;q=0.6"),
     new BasicHeader("Cache-Control", "max-age=0"),
@@ -39,7 +39,7 @@ object HttpClientUtil {
   )
 
   val sinanHttpHeaders = List[Header](
-    new BasicHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8"),
+    new BasicHeader("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,img/webp,img/apng,*/*;q=0.8"),
     new BasicHeader("Accept-Encoding", "gzip, deflate"),
     new BasicHeader("Accept-Language", "zh-CN,zh;q=0.9"),
     new BasicHeader("Cache-Control", "max-age=0"),

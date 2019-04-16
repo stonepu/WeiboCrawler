@@ -15,7 +15,7 @@ trait SlickTables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = Array(tBlog.schema, tBloguser.schema, tByrbbs.schema, tFriendship.schema, tTest.schema, tUser.schema).reduceLeft(_ ++ _)
+  lazy val schema: profile.SchemaDescription = Array(tBlog.schema, tBloguser.schema, tByrbbs.schema, tFriendship.schema, tTest.schema, tUrlsave.schema, tUser.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 
@@ -62,7 +62,7 @@ trait SlickTables {
    *  @param nickname Database column nickname SqlType(varchar), Length(30,true), Default(None)
    *  @param homeurl Database column HomeUrl SqlType(varchar), Length(100,true), Default(None)
    *  @param imageurl Database column ImageUrl SqlType(varchar), Length(100,true), Default(None)
-   *  @param gender Database column Gender SqlType(char), Default(None)
+   *  @param gender Database column Gender SqlType(varchar), Length(10,true), Default(None)
    *  @param certification Database column Certification SqlType(varchar), Length(100,true), Default(None)
    *  @param introduction Database column Introduction SqlType(varchar), Length(100,true), Default(None)
    *  @param region Database column Region SqlType(varchar), Length(100,true), Default(None)
@@ -71,11 +71,11 @@ trait SlickTables {
    *  @param follow Database column Follow SqlType(varchar), Length(100,true), Default(None)
    *  @param fans Database column Fans SqlType(varchar), Length(100,true), Default(None)
    *  @param password Database column password SqlType(varchar), Length(100,true), Default(None) */
-  case class rBloguser(nickname: Option[String] = None, homeurl: Option[String] = None, imageurl: Option[String] = None, gender: Option[Char] = None, certification: Option[String] = None, introduction: Option[String] = None, region: Option[String] = None, birth: Option[String] = None, photo: Option[String] = None, follow: Option[String] = None, fans: Option[String] = None, password: Option[String] = None)
+  case class rBloguser(nickname: Option[String] = None, homeurl: Option[String] = None, imageurl: Option[String] = None, gender: Option[String] = None, certification: Option[String] = None, introduction: Option[String] = None, region: Option[String] = None, birth: Option[String] = None, photo: Option[String] = None, follow: Option[String] = None, fans: Option[String] = None, password: Option[String] = None)
   /** GetResult implicit for fetching rBloguser objects using plain SQL queries */
-  implicit def GetResultrBloguser(implicit e0: GR[Option[String]], e1: GR[Option[Char]]): GR[rBloguser] = GR{
+  implicit def GetResultrBloguser(implicit e0: GR[Option[String]]): GR[rBloguser] = GR{
     prs => import prs._
-    rBloguser.tupled((<<?[String], <<?[String], <<?[String], <<?[Char], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
+    rBloguser.tupled((<<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String], <<?[String]))
   }
   /** Table description of table bloguser. Objects of this class serve as prototypes for rows in queries. */
   class tBloguser(_tableTag: Tag) extends profile.api.Table[rBloguser](_tableTag, "bloguser") {
@@ -87,8 +87,8 @@ trait SlickTables {
     val homeurl: Rep[Option[String]] = column[Option[String]]("HomeUrl", O.Length(100,varying=true), O.Default(None))
     /** Database column ImageUrl SqlType(varchar), Length(100,true), Default(None) */
     val imageurl: Rep[Option[String]] = column[Option[String]]("ImageUrl", O.Length(100,varying=true), O.Default(None))
-    /** Database column Gender SqlType(char), Default(None) */
-    val gender: Rep[Option[Char]] = column[Option[Char]]("Gender", O.Default(None))
+    /** Database column Gender SqlType(varchar), Length(10,true), Default(None) */
+    val gender: Rep[Option[String]] = column[Option[String]]("Gender", O.Length(10,varying=true), O.Default(None))
     /** Database column Certification SqlType(varchar), Length(100,true), Default(None) */
     val certification: Rep[Option[String]] = column[Option[String]]("Certification", O.Length(100,varying=true), O.Default(None))
     /** Database column Introduction SqlType(varchar), Length(100,true), Default(None) */
@@ -192,6 +192,26 @@ trait SlickTables {
   }
   /** Collection-like TableQuery object for table tTest */
   lazy val tTest = new TableQuery(tag => new tTest(tag))
+
+  /** Entity class storing rows of table tUrlsave
+   *  @param url Database column url SqlType(varchar), Length(100,true) */
+  case class rUrlsave(url: String)
+  /** GetResult implicit for fetching rUrlsave objects using plain SQL queries */
+  implicit def GetResultrUrlsave(implicit e0: GR[String]): GR[rUrlsave] = GR{
+    prs => import prs._
+    rUrlsave(<<[String])
+  }
+  /** Table description of table UrlSave. Objects of this class serve as prototypes for rows in queries. */
+  class tUrlsave(_tableTag: Tag) extends profile.api.Table[rUrlsave](_tableTag, "UrlSave") {
+    def * = url <> (rUrlsave, rUrlsave.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = Rep.Some(url).shaped.<>(r => r.map(_=> rUrlsave(r.get)), (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column url SqlType(varchar), Length(100,true) */
+    val url: Rep[String] = column[String]("url", O.Length(100,varying=true))
+  }
+  /** Collection-like TableQuery object for table tUrlsave */
+  lazy val tUrlsave = new TableQuery(tag => new tUrlsave(tag))
 
   /** Entity class storing rows of table tUser
    *  @param username Database column username SqlType(_varchar), Length(20,false), Default(None)

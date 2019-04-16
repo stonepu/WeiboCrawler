@@ -27,7 +27,7 @@ object BlogDao {
   }
 
   def findBlog(content: Option[String]) = {
-    val blog = tBlog.filter(_.content === content).map(_.homeurl).result
+    val blog = tBlog.filter(_.content === content).map(_.content).result
     db.run(blog)
   }
 
@@ -35,15 +35,15 @@ object BlogDao {
              content: Option[String], time: Option[String],
              like: Option[String], forward: Option[String],
              comment: Option[String], commentUrl: Option[String]) = {
-    findBlog(content).map{tempHome =>
-      if(tempHome.isEmpty){
+    findBlog(content).map{tempContent =>
+      if(tempContent.isEmpty){
         addBlog(author: Option[String], homeUrl: Option[String],
           content: Option[String], time: Option[String],
           like: Option[String], forward: Option[String],
           comment: Option[String], commentUrl: Option[String])
       }
       else{
-        val update = tBlog.filter(_.homeurl === homeUrl).map(p=>
+        val update = tBlog.filter(_.content === content).map(p=>
           (p.author, p.homeurl, p.content, p.time, p.like,
             p.forward, p.comment, p.commenturl)
         ).update(author, homeUrl, content, time,
@@ -51,6 +51,11 @@ object BlogDao {
         db.run(update)
       }
     }
+  }
+
+  def getContent(nickname: String) = {
+    val content = tBlog.filter(_.author === nickname).map(a => a.content).result
+    db.run(content)
   }
 
 }

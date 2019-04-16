@@ -82,7 +82,7 @@ object Signup extends Index {
     </div>
   )
 
-  def app : xml.Node = {
+  def render : xml.Node = {
     <div>
       <div class="heads">BreakingBad</div>
       <div class="container">

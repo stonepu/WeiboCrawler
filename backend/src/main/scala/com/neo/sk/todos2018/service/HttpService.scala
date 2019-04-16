@@ -13,6 +13,7 @@ trait HttpService extends ResourceService
   with UserService
   with ToDoListService
   with ByrService
+  with BlogService
 {
 
   implicit val system: ActorSystem
@@ -32,7 +33,7 @@ trait HttpService extends ResourceService
         pathEndOrSingleSlash {
           getFromResource("html/index.html")
         } ~
-          resourceRoutes ~ userRoutes ~ listRoutes ~ ByrRoutes
+          resourceRoutes ~ userRoutes ~ listRoutes ~ ByrRoutes ~ BlogRoutes
       }
     }
 

@@ -6,6 +6,7 @@ import mhtml.mount
 import org.scalajs.dom
 import com.neo.sk.todos2018.front.utils.{Http, JsFunc, PageSwitcher}
 import mhtml._
+import java.net.{URLDecoder, URLEncoder}
 import org.scalajs.dom
 import io.circe.syntax._
 import io.circe.generic.auto._
@@ -17,12 +18,13 @@ object Main extends PageSwitcher {
   val currentPage = currentHashVar.map { ls =>
     println(s"currentPage change to ${ls.mkString(",")}")
     ls match {
-      case "Login" :: Nil => Login.app
-      case "List" :: username :: Nil => new TaskList(username).app
-      case "Signup" :: Nil => Signup.app
-      case "BYRbbs" :: Nil => BYRBBS.app
-      case "BYRbbs"::"article" :: Nil => Article.app
-      case _ => BreakingBad.app
+      case "Login" :: Nil => Login.render
+      case "List" :: username :: Nil => new TaskList(username).render
+      case "Signup" :: Nil => Signup.render
+      case "BYRbbs" :: Nil => BYRBBS.render
+      case "BYRbbs"::"article" :: Nil => Article.render
+      case "Blog":: nickname :: Nil => new BreakingBad(URLDecoder.decode(nickname)).render
+      case _ => Login.render
     }
   }
 

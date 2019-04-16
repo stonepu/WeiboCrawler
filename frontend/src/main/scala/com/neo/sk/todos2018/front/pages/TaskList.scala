@@ -110,7 +110,7 @@ class TaskList(username: String) extends Index{
     }
   }
 
-  def app: xml.Node = {
+  def render: xml.Node = {
    getList
   <div>
     <div>

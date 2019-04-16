@@ -29,6 +29,7 @@ object Spider {
 
 
   final case object StartWork extends SpiderCommand
+  final case object UpdateUrl extends SpiderCommand
   final case object FinishTask extends SpiderCommand
 
   case class parseMyHome(html: String) extends SpiderCommand
@@ -80,6 +81,11 @@ object Spider {
             str = t.toString
             ctx.self ! parseMyHome(str)
           }
+          timer.startPeriodicTimer(TimerKey, UpdateUrl, 10.minutes)
+          Behaviors.same
+
+        case UpdateUrl=>
+
           Behaviors.same
 
         case parseMyHome(html) =>

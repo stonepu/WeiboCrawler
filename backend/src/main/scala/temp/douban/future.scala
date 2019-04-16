@@ -37,8 +37,12 @@ object future {
 //		(1 to 10).foreach( i =>
 //		 println(i))
 		
-		val s = "1"
-    println(s.toInt)
+		val s = List(Some("sdfe"), Some("dfefe"))
+    val v = s.map{i => i.get}
+		println(v)
+
+		val ss = Some("sdfe")
+		val sff = ss.getOrElse("")
 
 
 	}

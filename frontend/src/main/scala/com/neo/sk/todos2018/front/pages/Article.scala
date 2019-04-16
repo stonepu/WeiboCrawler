@@ -22,7 +22,7 @@ object Article extends Index {
 	}
 	
 	
-	def app:xml.Node={
+	def render:xml.Node={
 		<div>
 			<div><p>  {DataStore.artContent}</p>
 			</div>

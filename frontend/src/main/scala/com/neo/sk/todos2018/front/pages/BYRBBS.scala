@@ -93,7 +93,7 @@ object BYRBBS extends Index {
 		</div>
 	}
 	
-	def app: xml.Node = {
+	def render: xml.Node = {
 		<div>
 			<div>
 				<div class={welcome.htmlClass}> <a href="https://bbs.byr.cn">BYRBBS</a></div>
