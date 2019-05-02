@@ -17,11 +17,15 @@ object UrlSaveDao {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   def delete() = {
-    val delete = tUrlsave.filter(p => true).delete
+    val delete = tUrlsave.filter(p => !(p.url==="")).delete
     db.run(delete)
   }
 
   def updateUrl(url: String) = {
     db.run(tUrlsave += rUrlsave(url))
+  }
+
+  def getUrl() = {
+    db.run(tUrlsave.filter(p=> !(p.url === "")).map(i=>i.url).result)
   }
 }

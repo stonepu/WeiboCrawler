@@ -49,7 +49,6 @@ object InfoActor {
           crawl.fetch(url).onComplete{t=>
             val html = t.toString
             if(html.length <10){
-
               Thread.sleep(Random.nextInt(6)*1000 + 10000)
               ctx.self ! FetchUrl(url)
             }else

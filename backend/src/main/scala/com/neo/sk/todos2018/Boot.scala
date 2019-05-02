@@ -46,11 +46,13 @@ object Boot extends HttpService {
   val urlHome = "https://weibo.cn/5634035539"
   val urlFans = "https://weibo.cn/5634035539/fans"
   val urlInfo = "https://weibo.cn/5634035539/info"
+  val urlMyArticle = "https://weibo.cn/5634035539/profile"
 
-  val articleActor = system.spawn(ArticleActor.behavior, name = "article")
+  val commentActor = system.spawn(CommentActor.behavior, name="comment")
+  val articleActor = system.spawn(ArticleActor.init(urlMyArticle, commentActor), name = "article")
   val infoActor = system.spawn(InfoActor.init(urlInfo), name="info")
-  val fansActor = system.spawn(FansActor.init(urlFans), name = "fans")
-	val followActor = system.spawn(FollowActor.init(urlFollow), name="follow")
+  val fansActor = system.spawn(FansActor.init(urlFans, urlHome), name = "fans")
+	val followActor = system.spawn(FollowActor.init(urlFollow, urlHome), name="follow")
   val spiderActor = system.spawn(Spider.init(urlHome, followActor, fansActor, infoActor, articleActor), name = "spider")
   //val s1 = system.
 

@@ -3,26 +3,21 @@ package com.neo.sk.todos2018.models.dao.BlogDao
 import com.neo.sk.todos2018.utils.DBUtil.db
 import slick.jdbc.PostgresProfile.api._
 import com.neo.sk.todos2018.models.SlickTables._
-import com.neo.sk.todos2018.common.AppSettings._
-
-import scala.concurrent.ExecutionContext.Implicits.global._
-import scala.concurrent.Future
-import scala.util.{Failure, Success}
 import scala.concurrent.ExecutionContext.Implicits.global
 import com.neo.sk.todos2018.common.AppSettings
 import org.slf4j.LoggerFactory
-import com.neo.sk.todos2018.service.ServiceUtils
+import scala.util.Random
 
 object BlogDao {
   private val log = LoggerFactory.getLogger(this.getClass)
 
   def addBlog(author: Option[String], homeUrl: Option[String],
-              content: Option[String], time: Option[String],
+              content: String, time: Option[Long],
               like: Option[String], forward: Option[String],
-              comment: Option[String], commentUrl: Option[String]) = {
+              comment: Option[String], commentUrl: String) = {
     val addBlog =
       tBlog += rBlog(author, homeUrl, content, time, like, forward,
-        comment, commentUrl)
+        comment, commentUrl, item2int = -1)
     db.run(addBlog)
   }
 
@@ -32,15 +27,15 @@ object BlogDao {
   }
 
   def updateBlog(author: Option[String], homeUrl: Option[String],
-             content: Option[String], time: Option[String],
+             content: String, time: Option[Long],
              like: Option[String], forward: Option[String],
-             comment: Option[String], commentUrl: Option[String]) = {
-    findBlog(content).map{tempContent =>
+             comment: Option[String], commentUrl: String) = {
+    findBlog(Some(content)).map{tempContent =>
       if(tempContent.isEmpty){
         addBlog(author: Option[String], homeUrl: Option[String],
-          content: Option[String], time: Option[String],
+          content: String, time: Option[Long],
           like: Option[String], forward: Option[String],
-          comment: Option[String], commentUrl: Option[String])
+          comment: Option[String], commentUrl: String)
       }
       else{
         val update = tBlog.filter(_.content === content).map(p=>
@@ -53,9 +48,36 @@ object BlogDao {
     }
   }
 
-  def getContent(nickname: String) = {
-    val content = tBlog.filter(_.author === nickname).map(a => a.content).result
+  def getContent(nickname: String="Non", home: String="Non") = {
+    val content = tBlog.filter(p => p.author === nickname || p.homeurl===home).sortBy(_.time.desc).map(a => (a.content, a.commenturl, a.like, a.forward, a.comment, a.time, a.author)).result
     db.run(content)
+  }
+
+  def publish(nickname: String, content: String) = {
+    var homeUrl = ""
+    BlogUserDao.nickname2Url(nickname).onComplete{t=>
+      homeUrl = t.get.toList.head.get
+      val blog = tBlog += rBlog(Some(nickname), Some(homeUrl), content,
+        Some(System.currentTimeMillis()), Some("0"), Some("0"), Some("0"),Random.nextString(10), item2int = -1)
+      //log.info("正在存入数据库")
+      db.run(blog)
+    }
+  }
+
+  def like(commentUrl: String, likes: String) = {
+    val likeNum = likes.toInt + 1
+    val like = tBlog.filter(_.commenturl === commentUrl).map(p => p.like).update(Some(likeNum.toString))
+    db.run(like)
+  }
+
+  def getCTime(commentUrl: String) = {
+    val time = tBlog.filter(_.commenturl === commentUrl).map(p => p.ctime).result
+    db.run(time)
+  }
+
+  def updateCTime(commentUrl: String, time: Long) = {
+    val times = tBlog.filter(_.commenturl === commentUrl).map(p => p.ctime).update(Some(time))
+    db.run(times)
   }
 
 }

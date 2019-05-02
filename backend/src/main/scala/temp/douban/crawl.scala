@@ -9,10 +9,10 @@ import org.apache.http.util.EntityUtils
 import java.io.FileWriter
 import java.util.concurrent.Executor
 
-import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao}
+import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, CommentDao, realtimehotDao}
 import org.apache.http.client.config.{CookieSpecs, RequestConfig}
 import com.neo.sk.todos2018.service.CrawlWorker
-import com.neo.sk.todos2018.utils.HttpUtil
+import com.neo.sk.todos2018.utils.{HttpUtil, TimeUtil}
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document
 import org.jsoup.select.Elements
@@ -24,11 +24,13 @@ import com.neo.sk.todos2018.models.dao.ByrDAO
 import com.neo.sk.todos2018.ptcl.Protocols.parseError
 import com.neo.sk.todos2018.shared.ptcl.UserProtocol.SinaLoginReq
 import com.neo.sk.todos2018.shared.ptcl.{ErrorRsp, SuccessRsp}
+import com.neo.sk.utils.HttpClientUtil
+import sourcecode.Impls.Chunk.Var
 
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, ExecutionContextExecutor, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.Duration
 import scala.util.{Random, Success}
 //import akka.http.scaladsl.server.Directives._
 import org.slf4j.LoggerFactory
@@ -291,7 +293,22 @@ object crawl extends HttpUtil {
 		urlList
 	}
 
-	def parseAtcl(url: String, html: String) = {
+	def dealContent(html: String): String = {
+		val content = Jsoup.parse(html).body()
+		val timeDlt = content.getElementsByClass("ct")(0)
+		val patternL = "<a(.*?)>赞(.*?)</a>".r
+		val likeDlt = patternL.findFirstIn(html)
+		val patternF = "<a(.*?)>转发(.*?)</a>".r
+		val forwardDlt = patternF.findFirstIn(html)
+		val patternC = "<a(.*?)>评论(.*?)</a>".r
+		val commentDlt = patternC.findFirstIn(html)
+		val patternFa = "<a(.*?)>收藏(.*?)</a>".r
+		val favorDlt = patternFa.findFirstIn(html)
+		html.replace(timeDlt.toString, "").replace(likeDlt.getOrElse(""),"").replace(forwardDlt.getOrElse(""),"").replace(commentDlt.getOrElse(""),"").replace(favorDlt.getOrElse(""),"")
+	}
+
+	def parseAtcl(url: String, html: String): List[String] = {
+		var commentList = List[String]()
     //println(s"=====开始解析$url ========")
 		if(html.length > 10){
 			val doc = Jsoup.parse(html).body()
@@ -302,25 +319,38 @@ object crawl extends HttpUtil {
       //println(contents(0))
 			if(contents.length > 1)
 				for(content<- contents){
+
+
 					var time = "None"
 					if(content.getElementsByClass("ct").length>0)
 						time = content.getElementsByClass("ct")(0).text()
+					var timeL: Long = 0
+					if(time.startsWith("今天")) timeL = TimeUtil.getTodayStamp(time.split(" ")(1))
+					else if(time.contains("分钟前")) timeL = TimeUtil.minAgo(time.split("分钟前")(0).toInt)
+					else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
+					else if(time.isEmpty) timeL = System.currentTimeMillis()
+					else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
+
 					val patternLike = "赞(.*?)]".r
 					var like = patternLike.findFirstIn(content.toString).getOrElse("12None3").drop(2).dropRight(1)
 					like = if(like.length > 8) "0" else like
+
 					val patternForward = "转发(.*?)]".r
 					var forward = patternForward.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
 					forward = if(forward.length > 8) "0" else forward
+
 					val patternComment = "评论(.*?)]".r
 					var comment = patternComment.findFirstIn(content.toString).getOrElse("123None4").drop(3).dropRight(1)
 					comment = if(comment.length > 8) "0" else comment
+
 					if(content.getElementsByClass("cc").length == 0){
 						println("got wrong content!")
 						println(content)
 					}
 					val commentUrl = content.getElementsByClass("cc")(0).attr("href")
-					BlogDao.updateBlog(Some(name), Some(url), Some(content.toString),
-						Some(time), Some(like), Some(forward), Some(comment), Some(commentUrl))
+					commentList = commentUrl :: commentList
+					BlogDao.updateBlog(Some(name), Some(url), dealContent(content.toString),
+						Some(timeL), Some(like), Some(forward), Some(comment), commentUrl)
 					/*println("文章信息=======")
 					println(name)
 					println(url)
@@ -331,12 +361,13 @@ object crawl extends HttpUtil {
 					println(s"commentUrl: $commentUrl")*/
 				}
 		}
+		commentList
 	}
 
 	def getInfo(html: String) = {
 		if(html.length > 10){
 			var nickname = "None"
-			var gender: Char = 'n'
+			var gender = "男"
 			var homeUrl = "None"
 			var imgUrl = "None"
 			var certificateInfo = "None"
@@ -355,13 +386,14 @@ object crawl extends HttpUtil {
 			}
 			val patternName = "昵称(.*?)\\n".r
 			nickname = patternName.findFirstIn(doc.toString).getOrElse("123None4").drop(3).dropRight(1)
+			if(nickname=="/a>:霸气小浦") nickname = "霸气小浦"
 
 			val patternCertify = "认证:(.*?)\\n".r
 			certificateInfo = patternCertify.findFirstIn(doc.toString).getOrElse("123None4").drop(3).dropRight(1)
 
 			val patternGender = "性别:(.*?)\\n".r
-			val tempGend = patternGender.findFirstIn(doc.toString).getOrElse("123n4").drop(3).dropRight(1).toCharArray
-			gender = tempGend(0)
+			gender = patternGender.findFirstIn(doc.toString).getOrElse("123男4").drop(3).dropRight(1)
+
 			val patternRegion = "地区:(.*?)\\n".r
 			region = patternRegion.findFirstIn(doc.toString).getOrElse("123None4").drop(3).dropRight(1)
 
@@ -399,7 +431,8 @@ object crawl extends HttpUtil {
 			val doc = Jsoup.parse(html).body()
       if(doc.getElementsByClass("pa").length != 0){//轻度用户不用分页
         val page = doc.getElementsByClass("pa")(0)
-        input = page.getElementsByTag("input")(0).attr("value")
+				if(page.getElementsByTag("input").length>0)
+					input = page.getElementsByTag("input")(0).attr("value")
       }
 		}
 		input.toInt
@@ -410,7 +443,7 @@ object crawl extends HttpUtil {
 		val urlMap = mutable.HashMap[String, String]()
 		if(html.length > 10){
 			val doc = Jsoup.parse(html).body()
-			val info = doc.getElementsByClass("ut")(0).select("a[href]")
+			val info = if(doc.getElementsByClass("ut").length>0) doc.getElementsByClass("ut")(0).select("a[href]") else doc.select("a[href]")
 			val patternInfo = "([0-9]*)/info".r
 			val infoUrl = patternInfo.findFirstIn(info.toString).get
 			urlMap("info") = "https://weibo.cn/" + infoUrl
@@ -444,6 +477,10 @@ object crawl extends HttpUtil {
 		}
 	}
 
+	def fetchs(url: String) = {
+		HttpClientUtil.fetch(url)
+	}
+
   def parseMyHome(html: String) = {
 		val urlList = ListBuffer[String]()
 		if(html.length > 10){
@@ -455,7 +492,6 @@ object crawl extends HttpUtil {
 			urlList += fans
 			println(follow)
 			println(fans)
-
 		}
 		urlList.toList
   }
@@ -472,8 +508,107 @@ object crawl extends HttpUtil {
 				//println(url)
 			}
 		}
-    println("已完成********************")
+    //println("已完成********************")
     urlList.toList
+	}
+
+
+	def getCommentPage(html: String): Int = {
+		var input = "0"
+		if(html.length > 10){
+			val doc = Jsoup.parse(html).body()
+			if(doc.getElementsByClass("pa").length != 0){//轻度用户不用分页
+				val page = doc.getElementsByClass("pa")(0)
+				if(page.getElementsByTag("input").length>0)
+					input = page.getElementsByTag("input")(0).attr("value")
+			}
+		}
+		input.toInt
+	}
+
+	def judge2Comment(html: String, commentUrl: String) = {
+		val doc = Jsoup.parse(html).body()
+		val timeThing = Await.result(BlogDao.getCTime(commentUrl), Duration.Inf)
+		val timeDao: Long = if(timeThing.length == 0) 0 else timeThing(0).getOrElse(0)
+	}
+
+	def parseIncrementalComment(html: String, commentUrl: String, timeDao: Long, isFirst: Boolean=false): Int = {
+		val doc = Jsoup.parse(html).body()
+		val elements = doc.getElementsByClass("c").drop(4).dropRight(1)
+		var first = isFirst
+
+		for(element<- elements){
+			if(!element.toString.contains("查看更多热门")){
+				val reviewer = "https://weibo.cn/n/" + element.select("a[href]")(0).text()
+
+				val contentTemp = element.getElementsByClass("ctt")(0).text()
+				val content = contentTemp.split(":")(1)
+				val pattern = "@(.*?):".r
+				val ss = pattern.findFirstIn(contentTemp).getOrElse("")
+				val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
+
+				var time = "None"
+				if(element.getElementsByClass("ct").length>0)
+					time = element.getElementsByClass("ct")(0).text()
+				var timeL: Long = 0
+				if(time.startsWith("今天")) timeL = TimeUtil.getTodayStamp(time.split(" ")(1))
+				else if(time.contains("分钟前")) timeL = TimeUtil.minAgo(time.split("分钟前")(0).toInt)
+				else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
+				else if(time.isEmpty) timeL = System.currentTimeMillis()
+				else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
+
+				if(timeL > timeDao){
+					CommentDao.addComment(reviewer, reviewed, content, commentUrl, timeL)
+					BlogDao.updateCTime(commentUrl, timeL)
+				}
+				else return 0
+				first = false
+			}
+		}
+		0
+	}
+
+  def parseComment(html: String, commentUrl: String): Int = {
+    val doc = Jsoup.parse(html).body()
+    val elements = doc.getElementsByClass("c").drop(4).dropRight(1)
+    for(element<- elements){
+      if(!element.toString.contains("查看更多热门")){
+        val reviewer = "https://weibo.cn/n/" + element.select("a[href]")(0).text()
+
+        val contentTemp = element.getElementsByClass("ctt")(0).text()
+        val content = contentTemp.split(":")(1)
+        val pattern = "@(.*?):".r
+        val ss = pattern.findFirstIn(contentTemp).getOrElse("")
+        val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
+
+        var time = "None"
+        if(element.getElementsByClass("ct").length>0)
+          time = element.getElementsByClass("ct")(0).text()
+        var timeL: Long = 0
+        if(time.startsWith("今天")) timeL = TimeUtil.getTodayStamp(time.split(" ")(1))
+        else if(time.contains("分钟前")) timeL = TimeUtil.minAgo(time.split("分钟前")(0).toInt)
+        else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
+        else if(time.isEmpty) timeL = System.currentTimeMillis()
+        else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
+				CommentDao.addComment(reviewer, reviewed, content, commentUrl, timeL)
+      }
+    }
+    0
+  }
+
+	def parseHot(html: String) = {
+		val doc = Jsoup.parse(html).body()
+		val data = doc.getElementsByClass("data")(0)
+		val tbody = data.getElementsByTag("tbody")(0).select("tr")
+		for(tr<- tbody){
+			val rank = tr.getElementsByClass("td-01").text().toInt
+			val class2 = tr.getElementsByClass("td-02")
+			val textTemp = class2.text().split(" ")
+			val text = textTemp(0)
+			val hotNum = textTemp(1).toInt
+			val url = "https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
+			realtimehotDao.addHot(Some(rank), Some(text), Some(hotNum), url)
+		}
 	}
 
 
@@ -509,24 +644,34 @@ object crawl extends HttpUtil {
 		val myfollow = "https://weibo.cn/5634035539/follow"
 		val myfans = "https://weibo.cn/1746227731/fans"
 		val sunurl = "https://weibo.cn/sunsonglin"
-		getRequestSend("get", myurl, paras, headerss, "UTF-8").map{
+		val comUrl = "https://weibo.cn/comment/HpD0ovCTr?uid=2140522467&rl=0#cmtfrm"
+
+		val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
+		val s= "https://s.weibo.com/weibo?q=杨幂 健美短裤&amp;Refer=top"
+		getRequestSend("get",hotUrl , paras, headerss, "UTF-8").map{
 			case Right(value) =>
-//				val htmlList = getHtml(value)
-//				println(htmlList)
 				val doc = Jsoup.parse(value).body()
         //println(doc)
-        parseAtcl(myurl, value)
-				//parseFollow(value)
-				//get4Url(value)
-				//getPage(value)
-				//parseAtcl(urlSun, value)
-        //parseMyHome(value)
-				println("")
-				//parseBlogHtml(value)
-				//parse(value)
-			case Left(error) =>
+				val data = doc.getElementsByClass("data")(0)
+				val tbody = data.getElementsByTag("tbody")(0).select("tr")
+				for(l<- tbody){
+					val rank = l.getElementsByClass("td-01").text()
+					val class2 = l.getElementsByClass("td-02")
+					val text = class2.text()
+					val url = "https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
+
+					println(s"rank: $rank")
+					println(s"text: $text")
+					println(s"url: $url")
+					println("===============")
+				}
+			//	println(data)
+    	case Left(error) =>
 				println(s"=====error:$error")
 		}
+
+
+
 //    val url = "https://weibo.com/5634035539/follow?rightmod=1&wvr=6"
 //		getRequestSend("get",url, paras, headerss,"UTF-8").map{
 //			case Right(value) =>
@@ -559,6 +704,29 @@ object crawl extends HttpUtil {
 		}*/
 
 		// ---------------------------------------
+
+
+//		var s = " <div class=\"c\" id=\"C_4361081944724457\">\n  <span class=\"kt\">[热门]</span>\n  <a href=\"/u/5606713983\">爱喝茉莉茶的汪</a>\n  <img src=\"https://h5.sinaimg.cn/upload/2016/05/26/319/donate_btn_s.png\" alt=\"M\">:\n  <span class=\"ctt\">六月份辞职，准备三战，我想明白了自己到底要什么，家里人也支持。首先要感谢的是家人[祈祷][祈祷][祈祷]</span>&nbsp;\n  <a href=\"/spam/?cid=4361081944724457&amp;fuid=5606713983&amp;type=2&amp;rl=1\">举报</a>&nbsp;\n  <span class=\"cc\"><a href=\"/attitude/HpD1gjP2V/update?object_type=comment&amp;uid=5634035539&amp;rl=1&amp;st=56c882\">赞[193]</a></span>&nbsp;\n  <span class=\"cc\"><a href=\"/comments/reply/HpD0ovCTr/4361081944724457?rl=1&amp;st=56c882\">回复</a></span>&nbsp;\n  <span class=\"ct\">04月14日 20:53&nbsp;来自网页</span>\n </div>"
+//		var dd = " <div class=\"c\" id=\"C_4362504552047422\"> \n  <a href=\"/u/5744290761\">青橘汽水味儿</a> :\n  <span class=\"ctt\">回复<a href=\"/n/%E5%8A%A0%E6%B2%B9%E6%88%91%E8%87%AA%E5%B7%B1%E5%8A%A0%E6%B2%B9\">@加油我自己加油</a>:这真的是一个很头疼的问题<img alt=\"[摊手]\" src=\"//h5.sinaimg.cn/m/emoticon/icon/default/d_tanshou-3abaa4ed77.png\" style=\"width:1em; height:1em;\"></span>\n  <img alt=\"[摊手]\" src=\"//h5.sinaimg.cn/m/emoticon/icon/default/d_tanshou-3abaa4ed77.png\" style=\"width:1em; height:1em;\"> &nbsp;\n  <a href=\"/spam/?cid=4362504552047422&amp;fuid=5744290761&amp;type=2&amp;rl=1\">举报</a> &nbsp; \n  <span class=\"cc\"> <a href=\"/attitude/Hqe1N8ACW/update?object_type=comment&amp;uid=5634035539&amp;rl=1&amp;st=56c882\">赞[0]</a></span> &nbsp;\n  <span class=\"cc\"><a href=\"/comments/reply/HpD0ovCTr/4362504552047422?rl=1&amp;st=56c882\">回复</a></span> &nbsp; \n  <span class=\"ct\">04月18日 19:06&nbsp;来自网页 </span>\n </div> \n <div class=\"s\"></div> "
+//		val doc = Jsoup.parse(dd).body()
+//		val elements = doc.getElementsByClass("cc")
+//		for(element<- elements){
+//			dd = dd.replace(element.toString, "")
+//			println(element)
+//		}
+//		val reviewer = "https://weibo.cn/n/" + doc.select("a[href]")(0).text()
+//		println(s"url1: $reviewer")
+//
+//		val contentTemp = doc.getElementsByClass("ctt")(0).text()
+//		val content = contentTemp.split(":")(1)
+//		val pattern = "@(.*?):".r
+//		val ss = pattern.findFirstIn(contentTemp).getOrElse("")
+//		val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
+//		println(s"url2: $reviewed")
+//		println(content)
+//		println("============")
+//		println(dd)
+
 		StdIn.readLine()
 	}
 }

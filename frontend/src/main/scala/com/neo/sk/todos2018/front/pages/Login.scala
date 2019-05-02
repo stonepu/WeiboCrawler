@@ -53,16 +53,16 @@ object Login extends Index{
 
   val email: Var[Node] = Var(
     <div class="form-group">
-      <label for="inputEmail3" class="col-sm-3 control-label" style="color:#fff">用户名:</label>
+      <label for="inputEmail3" class="col-sm-3 control-label">用户名:</label>
       <div class="col-sm-9">
-        <input type="text" class="form-control" id="username" value="考研政治徐涛" placeholder="用户名"></input>
+        <input type="text" class="form-control" id="username" value="SunTianRuo" placeholder="用户名"></input>
       </div>
     </div>
   )
 
   val password: Var[Node] = Var(
     <div class="form-group">
-      <label for="inputPassword3" class="col-sm-3 control-label" style="color:#fff">密  码:</label>
+      <label for="inputPassword3" class="col-sm-3 control-label">密  码:</label>
       <div class="col-sm-9">
         <input type="password" class="form-control" id="password" value="123" placeholder="密码"></input>
       </div>
@@ -74,7 +74,7 @@ object Login extends Index{
       <div class="col-sm-offset-2 col-sm-10">
         <div class="checkbox">
           <label>
-            <input type="checkbox" value="Remember me" style="color:#fff"/> Remember me
+            <input type="checkbox" value="Remember me"/> Remember me
           </label>
         </div>
       </div>

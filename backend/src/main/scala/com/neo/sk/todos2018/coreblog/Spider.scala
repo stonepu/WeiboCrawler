@@ -5,6 +5,7 @@ import akka.actor.typed.scaladsl.{ActorContext, Behaviors, StashBuffer, TimerSch
 import akka.actor.typed.{ActorRef, Behavior}
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
+import com.neo.sk.todos2018.common.AppSettings
 import com.neo.sk.todos2018.coreblog.ArticleActor.{ArticleCommand, FetchUrl}
 import com.neo.sk.todos2018.coreblog.FansActor.FansCommand
 import com.neo.sk.todos2018.coreblog.FollowActor.FollowCommand
@@ -18,6 +19,7 @@ import scala.concurrent.Future
 import scala.util.{Failure, Random, Success}
 import com.neo.sk.todos2018.coreblog.FollowActor
 import com.neo.sk.todos2018.coreblog.InfoActor.InfoCommand
+import com.neo.sk.todos2018.models.dao.BlogDao.UrlSaveDao
 
 
 object Spider {
@@ -30,6 +32,7 @@ object Spider {
 
   final case object StartWork extends SpiderCommand
   final case object UpdateUrl extends SpiderCommand
+  final case object FetchTask extends SpiderCommand
   final case object FinishTask extends SpiderCommand
 
   case class parseMyHome(html: String) extends SpiderCommand
@@ -76,16 +79,28 @@ object Spider {
     Behaviors.receive[SpiderCommand]{ (ctx, msg) =>
       msg match {
         case StartWork =>
-          var str = "www."
-          crawl.fetch(url).onComplete{t =>
-            str = t.toString
-            ctx.self ! parseMyHome(str)
+          UrlSaveDao.getUrl().onComplete{t =>
+            val urlList = t.get.toList
+            if(urlList.isEmpty){
+              var str = "www."
+              hashUrl2Get.enqueue(url)
+              ctx.self ! FetchTask
+              /*crawl.fetch(url).onComplete{t =>
+                str = t.toString
+                ctx.self ! parseMyHome(str)
+              }*/
+            }else{
+              urlList.foreach(p=> hashUrl2Get.enqueue(p))
+              ctx.self ! FetchTask
+            }
           }
-          timer.startPeriodicTimer(TimerKey, UpdateUrl, 10.minutes)
+          timer.startPeriodicTimer(TimerKey, UpdateUrl, 1.minutes)
+          timer.startPeriodicTimer(TimerKey, FetchTask, 3.seconds)
           Behaviors.same
 
         case UpdateUrl=>
-
+          UrlSaveDao.delete()
+          hashUrl2Get.foreach(t=> UrlSaveDao.updateUrl(t))
           Behaviors.same
 
         case parseMyHome(html) =>
@@ -98,24 +113,15 @@ object Spider {
           urlList.foreach{url =>
             hashUrl2Get.enqueue(url)
           }
-          if(hashUrl2Get.length>0){
-            var nextUrl = hashUrl2Get.dequeue()
-            while(hashSet.contains(nextUrl)){
-              if(hashUrl2Get.length>0){
-                nextUrl = hashUrl2Get.dequeue()
-              }
-            }
-            if(!hashSet.contains(nextUrl)){
-              hashSet += nextUrl
-              ctx.self ! Distribution(nextUrl)
-            }
-          }
           Behaviors.same
 
         case GetUrlFromFans(urlList) =>
           urlList.foreach{url =>
             hashUrl2Get.enqueue(url)
           }
+          Behaviors.same
+
+        case FetchTask =>
           if(hashUrl2Get.length > 0){
             var nextUrl = hashUrl2Get.dequeue()
             while(hashSet.contains(nextUrl)){
@@ -137,7 +143,8 @@ object Spider {
           Behaviors.same
 
         case Distribution(url) =>
-          articleActor ! FetchUrl(url)
+          if(url != AppSettings.homeUrl)
+            articleActor ! FetchUrl(url)
           crawl.fetch(url).onComplete{html =>
             if(html.toString.length < 10){
               Thread.sleep(Random.nextInt(6)*1000 + 4000)
@@ -149,13 +156,13 @@ object Spider {
                 needStop = false
               }
               //fixme here 给各个actor发url
-              Thread.sleep(Random.nextInt(6)*1000+4000)
-              follow ! FollowActor.FetchUrl(urlMap("follow"))
-              Thread.sleep(Random.nextInt(6)*1000+4000)
+              Thread.sleep(Random.nextInt(4)*1000+2000)
+              follow ! FollowActor.FetchUrl(urlMap("follow"), url)
+              //Thread.sleep(Random.nextInt(6)*1000+2000)
               info ! InfoActor.FetchUrl(urlMap("info"))
-              println(urlMap("info")+" infoUrl start work!")
-              Thread.sleep(Random.nextInt(6)*1000+4000)
-              fans ! FansActor.FetchUrl(urlMap("fans"))
+              //println(urlMap("info")+" infoUrl start work!")
+              Thread.sleep(Random.nextInt(4)*1000+2000)
+              fans ! FansActor.FetchUrl(urlMap("fans"), url)
             }
           }
           Behaviors.same

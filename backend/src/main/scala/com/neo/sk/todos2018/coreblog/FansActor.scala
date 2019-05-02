@@ -15,6 +15,7 @@ import concurrent.duration._
 import scala.concurrent.Future
 import scala.util.{Failure, Random, Success}
 import com.neo.sk.todos2018.Boot.spiderActor
+import com.neo.sk.todos2018.models.dao.BlogDao.BlogUserDao
 
 object FansActor {
   private val log = LoggerFactory.getLogger(this.getClass)
@@ -25,16 +26,16 @@ object FansActor {
   case object StartWork extends FansCommand
   case object WorkOtherPage extends FansCommand
 
-  case class GetRemainingPageUrl(url: String, page: Int) extends FansCommand
-  case class FetchUrl(url: String) extends FansCommand
+  case class GetRemainingPageUrl(url: String, home: String, page: Int) extends FansCommand
+  case class FetchUrl(url: String, home: String) extends FansCommand
 
-  def init(url: String):Behavior[FansCommand] = {
+  def init(url: String, home: String):Behavior[FansCommand] = {
     Behaviors.setup[FansCommand]{ctx =>
       log.info(s"${ctx.self.path} start work")
       Behaviors.withTimers[FansCommand] { implicit timer =>
         timer.startSingleTimer(TimeOutMsg, StartWork, 5.seconds)
-        val hash: mutable.Queue[String] = mutable.Queue()
-        idle(url, hash)
+        val hash: mutable.Queue[(String, String)] = mutable.Queue()
+        idle(url, home, hash)
       }
     }
   }
@@ -42,7 +43,7 @@ object FansActor {
 
   //分页功能
 
-  def idle(url: String, hash: mutable.Queue[String]): Behavior[FansCommand] = {
+  def idle(url: String, homes: String, hash: mutable.Queue[(String, String)]): Behavior[FansCommand] = {
     Behaviors.receive[FansCommand]{(ctx, msg)=>
       msg match {
         case StartWork =>
@@ -54,35 +55,41 @@ object FansActor {
             }else{
               val page = crawl.getPage(html)
               val urlList = crawl.parseFollow(html)
-              spiderActor ! Spider.GetUrlFromFans(urlList)
-              ctx.self ! GetRemainingPageUrl(url, page)
+              if(urlList.length>0){
+                spiderActor ! Spider.GetUrlFromFans(urlList)
+                BlogUserDao.updateFans(homes, urlList.mkString("|")+"|")
+              }
+              ctx.self ! GetRemainingPageUrl(url, homes, page)
             }
           }
           Behaviors.same
 
-        case FetchUrl(url) =>
+        case FetchUrl(url, home) =>
           crawl.fetch(url).onComplete{t=>
             val html = t.toString
             if(html.length < 10){
               log.error(s"========get url $url error!,重新请求============")
               spiderActor ! WaitAMin
               Thread.sleep(Random.nextInt(15) * 1000 + 10000)
-              ctx.self ! FetchUrl(url)
+              ctx.self ! FetchUrl(url, home)
             }else {
               val urlList = crawl.parseFollow(html)
-              spiderActor ! Spider.GetUrlFromFans(urlList)
+              if(urlList.length>0){
+                spiderActor ! Spider.GetUrlFromFans(urlList)
+                BlogUserDao.updateFans(home, urlList.mkString("|")+"|")
+              }
               val page = crawl.getPage(html)//解析第一页数据
-              ctx.self ! GetRemainingPageUrl(url, page)
+              ctx.self ! GetRemainingPageUrl(url, home, page)
             }
           }
           Behaviors.same
 
-        case GetRemainingPageUrl(url, page) =>
+        case GetRemainingPageUrl(url, home, page) =>
           if(page > 1){
             val pages = if(page > 100) 100 else page
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
-              hash.enqueue(urlPage)
+              hash.enqueue((urlPage, home))
             }
             ctx.self ! WorkOtherPage
           }
@@ -91,13 +98,16 @@ object FansActor {
         case WorkOtherPage =>
           if(hash.length > 0){
             val urlTemp = hash.dequeue()
-            crawl.fetch(urlTemp).onComplete{html=>
+            crawl.fetch(urlTemp._1).onComplete{html=>
               if(html.toString.length < 10){
                 log.error(s"get url $urlTemp error!,重新放入队列")
                 hash.enqueue(urlTemp)
               }else{
                 val urlList = crawl.parseFollow(html.toString)
-                spiderActor ! Spider.GetUrlFromFans(urlList)
+                if(urlList.length>0){
+                  spiderActor ! Spider.GetUrlFromFans(urlList)
+                  BlogUserDao.updateFans(urlTemp._2, urlList.mkString("|")+"|")
+                }
               }
             }
             if(hash.length > 0){

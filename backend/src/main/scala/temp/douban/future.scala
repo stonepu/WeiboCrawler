@@ -1,5 +1,12 @@
 package temp.douban
 
+import com.neo.sk.todos2018.models.dao.BlogDao.BlogUserDao
+import com.neo.sk.todos2018.utils.TimeUtil
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import org.jsoup.select.Elements
+import org.jsoup.nodes.Element
+
 import scala.concurrent._
 import ExecutionContext.Implicits.global
 import scala.io.StdIn
@@ -14,37 +21,16 @@ object future {
 	def future3(i: Int) = {
 		Future{i*i}
 	}
+
+
+	def dealNickname(nickname: String): String = {
+		val s = if(nickname.isEmpty) "" else s"<a href=${"\"#/move/"+nickname+"\""}><font size=3>$nickname</font></a>"
+		s
+	}
+
 	def main(args: Array[String]): Unit = {
-		//Future{for(i<-0 to 100000) print("A"); Thread.sleep(10)}
-		//Future{for(i<-0 to 500000) print("B"); println("");Thread.sleep(10)}
-		//for{n1<- future2; n2<- future1} null
-		/*val f = Future{
-			42
-		}
-		val f2 = Future{
-			33
-		}
-		future2.onComplete{
-			case Success(i) =>
-				for(i<-0 to 50000)print("*")
-				future1.onComplete{
-					case Success(t) => null
-					case Failure(error) => println(s"error: $error")
-				}
-			case Failure(s) => println(s)
-		}*/
-		
-//		(1 to 10).foreach( i =>
-//		 println(i))
-		
-		val s = List(Some("sdfe"), Some("dfefe"))
-    val v = s.map{i => i.get}
-		println(v)
-
-		val ss = Some("sdfe")
-		val sff = ss.getOrElse("")
-
-
+		val s = "s\"dfefsf\"d"
+		println(dealNickname(s))
 	}
 	
 }

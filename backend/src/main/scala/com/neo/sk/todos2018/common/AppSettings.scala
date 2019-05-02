@@ -34,6 +34,8 @@ object AppSettings {
       else Some(config.getDuration(path, TimeUnit.SECONDS))
   }
 
+  val homeUrl = "https://weibo.cn/5634035539"
+
   var user = Map("test"->"test", "scala"->"scala")
 
 
@@ -60,6 +62,8 @@ object AppSettings {
     require(users.length == pwd.length, "userList.length and pwd.length not equal.")
     users.zip(pwd).toMap
   }
+
+  val bupt = appConfig.getStringList("bupt")
 
   val slickConfig = config.getConfig("slick.db")
   val slickUrl = slickConfig.getString("url")

@@ -31,7 +31,12 @@ object Routes {
     val baseUrl = base + "/blog"
     val getContent = baseUrl + "/getContent"
     val getContentByPage = baseUrl + "/getContentByPage"
-
+    val getInfo = baseUrl + "/getInfo"
+    val getFansInfo = baseUrl + "/getFansInfo"
+    val getFollowInfo = baseUrl + "/getFollowInfo"
+    val publish = baseUrl + "/publish"
+    val like = baseUrl + "/like"
+    val getFollowByPage = baseUrl + "/getFollowByPage"
   }
 
 }

@@ -15,6 +15,7 @@ import concurrent.duration._
 import scala.concurrent.Future
 import scala.util.{Failure, Random, Success}
 import com.neo.sk.todos2018.Boot.spiderActor
+import com.neo.sk.todos2018.models.dao.BlogDao.BlogUserDao
 
 import scala.collection.mutable.ListBuffer
 
@@ -27,23 +28,23 @@ object FollowActor {
 
   case object StartWork extends FollowCommand
   case object WorkOtherPage extends FollowCommand
-  case class GetRemainingPageUrl(url: String, page: Int) extends FollowCommand
-  case class FetchUrl(url: String) extends  FollowCommand
+  case class GetRemainingPageUrl(url: String, home: String, page: Int) extends FollowCommand
+  case class FetchUrl(url: String, home: String) extends  FollowCommand
 
-  def init(url: String,
+  def init(url: String, home: String
            ): Behavior[FollowCommand] = {
     Behaviors.setup[FollowCommand]{ctx =>
       log.info(s"${ctx.self.path} start work")
       Behaviors.withTimers[FollowCommand]{ implicit timer =>
         timer.startSingleTimer(TimeOutMsg, StartWork, 5.seconds)
-        val hash: mutable.Queue[String] = mutable.Queue()
+        val hash: mutable.Queue[(String, String)] = mutable.Queue()
         val urlList: ListBuffer[String] = ListBuffer()
-        idle(url, hash, urlList)
+        idle(url, home, hash, urlList)
       }
     }
   }
 
-  def idle(url: String, hash: mutable.Queue[String],
+  def idle(url: String, homes: String, hash: mutable.Queue[(String, String)],
            urlListBuffer: ListBuffer[String]
           ): Behavior[FollowCommand] = {
     Behaviors.receive[FollowCommand]{(ctx, msg) =>
@@ -58,13 +59,16 @@ object FollowActor {
             } else{
               val page = crawl.getPage(html)
               val urlList = crawl.parseFollow(html)
-              spiderActor ! Spider.GetUrlFromFol(urlList)
-              ctx.self ! GetRemainingPageUrl(url, page)
+              if(urlList.length>0){
+                BlogUserDao.updateFollow(homes, urlList.mkString("|")+"|")
+                spiderActor ! Spider.GetUrlFromFol(urlList)
+              }
+              ctx.self ! GetRemainingPageUrl(url, homes, page)
             }
           }
           Behaviors.same
 
-        case FetchUrl(url) =>
+        case FetchUrl(url, home) =>
           crawl.fetch(url).onComplete{t =>
             val html = t.toString
             if(html.length < 10) {
@@ -72,23 +76,26 @@ object FollowActor {
               log.error(s"======get url $url error!,重新请求=======")
               spiderActor ! Spider.WaitAMin
               Thread.sleep(Random.nextInt(15) * 1000 + 10000)
-              ctx.self ! FetchUrl(url)
+              ctx.self ! FetchUrl(url, home)
             }
             else {
               val urlList = crawl.parseFollow(html)
-              spiderActor ! Spider.GetUrlFromFol(urlList)
+              if(urlList.length>0){
+                spiderActor ! Spider.GetUrlFromFol(urlList)
+                BlogUserDao.updateFollow(home, urlList.mkString("|")+"|")
+              }
               val page = crawl.getPage(html)//解析第一页数据
-              ctx.self ! GetRemainingPageUrl(url, page)
+              ctx.self ! GetRemainingPageUrl(url, home, page)
             }
           }
           Behaviors.same
 
-        case GetRemainingPageUrl(url, page) =>
+        case GetRemainingPageUrl(url, home, page) =>
           if(page > 1){
             val pages = if(page > 100) 100 else page
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
-              hash.enqueue(urlPage)
+              hash.enqueue((urlPage, home))
             }
             ctx.self ! WorkOtherPage
           }
@@ -97,17 +104,20 @@ object FollowActor {
         case WorkOtherPage =>
           if(hash.length>0){
             val urlTemp = hash.dequeue()
-            crawl.fetch(urlTemp).onComplete{html=>
+            crawl.fetch(urlTemp._1).onComplete{html=>
               if(html.toString.length < 10){
                 log.error(s"=======get url $urlTemp error!,重新放入队列===========")
                 hash.enqueue(urlTemp)
               }else{
                 val urlList = crawl.parseFollow(html.toString)
-                spiderActor ! Spider.GetUrlFromFol(urlList)
+                if(urlList.length>0){
+                  BlogUserDao.updateFollow(urlTemp._2, urlList.mkString("|")+"|")
+                  spiderActor ! Spider.GetUrlFromFol(urlList)
+                }
               }
             }
             if(hash.length>0){
-              Thread.sleep(Random.nextInt(6)*1000 + 5000)
+              Thread.sleep(Random.nextInt(6)*1000 + 3000)
               ctx.self ! WorkOtherPage
             }
           }

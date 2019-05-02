@@ -35,5 +35,23 @@ object TimeUtil {
     zeroStamp
   }
 
+  def getTodayStamp(date: String): Long = {
+    val curTime = System.currentTimeMillis()
+    val dates = TimeUtil.timestamp2DateOnly(curTime).split("/").take(3).mkString("-")
+    val todayStamp = TimeUtil.date2TimeStamp(dates + " " + date + ":00")
+    todayStamp
+  }
+
+  def minAgo(date: Int): Long = {
+    val curTime = System.currentTimeMillis()
+    curTime - date * 1000 * date * 60
+  }
+
+  def addYear(date: String): Long = {//MM月dd日 hh:mm
+    val curTime = System.currentTimeMillis()
+    val yy = TimeUtil.timestamp2DateOnly(curTime).split("/")(0)
+    val time = yy + "-" + date.replaceAll("月", "-").replaceAll("日","") + ":00"
+    TimeUtil.date2TimeStamp(time)
+  }
 
 }

@@ -24,6 +24,9 @@ object Main extends PageSwitcher {
       case "BYRbbs" :: Nil => BYRBBS.render
       case "BYRbbs"::"article" :: Nil => Article.render
       case "Blog":: nickname :: Nil => new BreakingBad(URLDecoder.decode(nickname)).render
+      case "move" :: nickname :: Nil => new BreakingBad(URLDecoder.decode(nickname), false).render
+      case nickname :: "follow" :: Nil => new Follow(URLDecoder.decode(nickname)).render
+      case nickname :: "fans" :: Nil => new Fans(URLDecoder.decode(nickname)).render
       case _ => Login.render
     }
   }
