@@ -26,8 +26,8 @@ object FansActor {
   case object StartWork extends FansCommand
   case object WorkOtherPage extends FansCommand
 
-  case class GetRemainingPageUrl(url: String, home: String, page: Int) extends FansCommand
-  case class FetchUrl(url: String, home: String) extends FansCommand
+  case class GetRemainingPageUrl(url: String, home: String, page: Int, isBupt: Boolean=false) extends FansCommand
+  case class FetchUrl(url: String, home: String, isBupt: Boolean=false) extends FansCommand
 
   def init(url: String, home: String):Behavior[FansCommand] = {
     Behaviors.setup[FansCommand]{ctx =>
@@ -64,7 +64,7 @@ object FansActor {
           }
           Behaviors.same
 
-        case FetchUrl(url, home) =>
+        case FetchUrl(url, home, isBupt) =>
           crawl.fetch(url).onComplete{t=>
             val html = t.toString
             if(html.length < 10){
@@ -79,14 +79,14 @@ object FansActor {
                 BlogUserDao.updateFans(home, urlList.mkString("|")+"|")
               }
               val page = crawl.getPage(html)//解析第一页数据
-              ctx.self ! GetRemainingPageUrl(url, home, page)
+              ctx.self ! GetRemainingPageUrl(url, home, page, isBupt)
             }
           }
           Behaviors.same
 
-        case GetRemainingPageUrl(url, home, page) =>
+        case GetRemainingPageUrl(url, home, page, isBupt) =>
           if(page > 1){
-            val pages = if(page > 100) 100 else page
+            val pages = if(page < 20 || isBupt) page else 20
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
               hash.enqueue((urlPage, home))

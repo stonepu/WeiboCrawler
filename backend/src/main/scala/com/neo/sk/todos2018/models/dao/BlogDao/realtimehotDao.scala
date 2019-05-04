@@ -12,6 +12,7 @@ object realtimehotDao {
 
   def addHot(rank: Option[Int], title: Option[String],
              hotNum: Option[Long], url: String) = {
+    println("=====addHotting=====")
     val hot = tRealtimehot += rRealtimehot(rank, title, hotNum, url)
     db.run(hot)
   }
@@ -21,7 +22,7 @@ object realtimehotDao {
   }
 
   def getHot() = {
-    db.run(tRealtimehot.filter(p => !(p.url===""))
+    db.run(tRealtimehot.filter(p => !(p.url==="")).sortBy(_.rank.asc)
       .map(t =>(t.rank, t.title, t.hotnum, t.url)).result)
   }
 }

@@ -11,7 +11,7 @@ object CommentDao {
 
   def addComment(reviewer: String, reviewed: String, content: String,
                  commentUrl: String, time: Long=0L) = {
-    println("+++++++++adding comment++++++++++++")
+    //println("+++++++++adding comment++++++++++++")
     db.run(tComment += rComment(reviewer, Some(reviewed), Some(content), Some(commentUrl), Some(time)))
   }
 

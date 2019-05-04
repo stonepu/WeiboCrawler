@@ -41,11 +41,13 @@ object HotActor {
     Behaviors.receive[HotCommand]{(ctx, msg) =>
       msg match {
         case StartWork =>
+          ctx.self ! Fetch
           timer.startPeriodicTimer(TimeOutMsg, Fetch, 30.minutes)
           Behaviors.same
 
         case Fetch =>
           realtimehotDao.dtl()
+          println(s"=====hot working: url= ${url} =====")
           crawl.fetch(url).onComplete{t =>
             val html = t.get
             if(html.length>10){

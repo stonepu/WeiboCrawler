@@ -138,19 +138,20 @@ object Spider {
 
         case WaitAMin =>
           log.debug("you have to wait for some time")
-          log.debug("you have to wait for some time")
           needStop = true
           Behaviors.same
 
         case Distribution(url) =>
           if(url != AppSettings.homeUrl)
             articleActor ! FetchUrl(url)
-          crawl.fetch(url).onComplete{html =>
-            if(html.toString.length < 10){
+          crawl.fetch(url).onComplete{t =>
+            val html = t.get
+            if(html.length < 10){
               Thread.sleep(Random.nextInt(6)*1000 + 4000)
               ctx.self ! Distribution(url)
             }else{
-              val urlMap = crawl.get4Url(html.toString)
+              val isBupt = if(html.contains("北邮") || html.contains("北京邮电大学") || html.contains("BUPT")) true else false
+              val urlMap = crawl.get4Url(html)
               if(needStop == true) {
                 Thread.sleep(20000)
                 needStop = false
@@ -162,7 +163,7 @@ object Spider {
               info ! InfoActor.FetchUrl(urlMap("info"))
               //println(urlMap("info")+" infoUrl start work!")
               Thread.sleep(Random.nextInt(4)*1000+2000)
-              fans ! FansActor.FetchUrl(urlMap("fans"), url)
+              fans ! FansActor.FetchUrl(urlMap("fans"), url, isBupt)
             }
           }
           Behaviors.same

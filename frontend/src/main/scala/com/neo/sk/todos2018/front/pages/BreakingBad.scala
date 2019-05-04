@@ -23,7 +23,7 @@ import org.scalajs.dom.raw.HTMLElement
 
 import scala.xml.Node
 
-class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
+class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") extends Index {
   val contentList = Var(List.empty[BlogInfo])
                                     //content, commentUrl, like, forward, comment
   val infoList = Var(List.empty[UserInfo])
@@ -78,7 +78,7 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
     val url = Routes.Blog.publish
     //val text = dom.window.document.getElementById("publishing").asInstanceOf[Input].value
     val texts = dom.window.document.getElementsByClassName("textarea")(0).textContent
-    val data = BlogPtcl.PublishReq(nickname, texts).asJson.noSpaces
+    val data = BlogPtcl.PublishReq(home, texts).asJson.noSpaces
     if(!texts.isEmpty){
       Http.postJsonAndParse[SuccessRsp](url, data).map{
         case Right(rsp) =>
@@ -167,10 +167,9 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
   val left: Var[Node] = Var(
     <div class="col-xs-2" style="margin-top:15px; color:#fff; background-color:rgba(0,0,0,0.2); overflow:hidden;">
       <div style="text-align:center; margin-top:15px">
-        <div><a href={"#/"+nickname+"/follow"}><font size="4" color="white">关注</font></a></div>
-        <div><a href={"#/"+nickname+"/fans"}><font size="4" color="white">粉丝</font></a></div>
-        <div><font size="4" color="white">相册（待开发）</font></div>
-        <div><a href="javascript:void(0)"><font size="4" color="white">回到首页()</font></a></div>
+        <div><a href={"#/"+home+"/follow"}><font size="4" color="white">关注</font></a></div>
+        <div><a href={"#/"+home+"/fans"}><font size="4" color="white">粉丝</font></a></div>
+        <div><a href="javascript:void(0)"><font size="4" color="white"><a href={"#/Blog/"+home}>回到首页</a></font></a></div>
       </div>
       <div style="height:300px;font-size:20px;margin-top:15px;text-align:center;line-height:300px">advertisement</div>
       <div style="height:500px"></div>
@@ -207,7 +206,7 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
 
   val hotListRx = hotList.map{
     case Nil => <div></div>
-    case list => <div>{list.distinct.map{l =>
+    case list => <div style="padding:1rem 1rem 1rem 1rem">{list.distinct.map{l =>
         <div>{l.rank}
           <span><a href={l.url}>{l.title}</a></span>
           <span>{l.hotNum}</span>
@@ -261,9 +260,9 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
   val nav: Var[Node] = Var(
     <div>
       <ul class="nav nav-tabs">
-        <li role="presentation"><a href="javascript:void(0)" onclick={()=>followByPage(nickname)}>关注</a></li>
+        <li role="presentation"><a href="javascript:void(0)" onclick={()=>followByPage(home)}>关注</a></li>
         <li role="presentation"><a href="javascript:void(0)" onclick={()=>}>可能喜欢</a></li>
-        <li role="presentation"><a href="javascript:void(0)" onclick={()=>getContentByPage(nickname,1)}>我的内容</a></li>
+        <li role="presentation"><a href="javascript:void(0)" onclick={()=>getContentByPage(home,1)}>我的内容</a></li>
       </ul>
     </div>
   )
@@ -277,11 +276,11 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
               <span aria-hidden="true">{"<"}</span>
             </a>
           </li>
-          <li><a href="javascript:void(0)" onclick={()=>changePage(show, nickname, pagePoint)}>{pageVars.map(i=>i._1)}</a></li>
-          <li><a href="javascript:void(0)" onclick={()=>changePage(show, nickname, pagePoint+1)}>{pageVars.map(i=>i._2)}</a></li>
-          <li><a href="javascript:void(0)" onclick={()=>changePage(show, nickname, pagePoint+2)}>{pageVars.map(i=>i._3)}</a></li>
-          <li><a href="javascript:void(0)" onclick={()=>changePage(show, nickname, pagePoint+3)}>{pageVars.map(i=>i._4)}</a></li>
-          <li><a href="javascript:void(0)" onclick={()=>changePage(show, nickname, pagePoint+4)}>{pageVars.map(i=>i._5)}</a></li>
+          <li><a href="javascript:void(0)" onclick={()=>changePage(show, home, pagePoint)}>{pageVars.map(i=>i._1)}</a></li>
+          <li><a href="javascript:void(0)" onclick={()=>changePage(show, home, pagePoint+1)}>{pageVars.map(i=>i._2)}</a></li>
+          <li><a href="javascript:void(0)" onclick={()=>changePage(show, home, pagePoint+2)}>{pageVars.map(i=>i._3)}</a></li>
+          <li><a href="javascript:void(0)" onclick={()=>changePage(show, home, pagePoint+3)}>{pageVars.map(i=>i._4)}</a></li>
+          <li><a href="javascript:void(0)" onclick={()=>changePage(show, home, pagePoint+4)}>{pageVars.map(i=>i._5)}</a></li>
           <li>
             <a href="javascript:void(0);" onclick={()=>next()} aria-label="Next">
               <span aria-hidden="true">{">"}</span>
@@ -308,7 +307,7 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
   val right: Var[Node] = Var(
     <div class="col-xs-3" style="margin-top:15px; text-align:left;">
       {infoRx}
-      <div style="height:400px; margin-top:15px; background:#fff;">
+      <div style="margin-top:15px; background:#fff;">
         {hotListRx}
       </div>
     </div>
@@ -334,9 +333,9 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
   )
 
   override def render: Node = {
-    if(isHome) followByPage(nickname, 1)
-    else getContentByPage(nickname, 1)
-    getInfo(nickname)
+    if(isHome) followByPage(home, 1)
+    else getContentByPage(home, 1)
+    getInfo(home)
     getHot()
     <div class="container">
       <div class="row">

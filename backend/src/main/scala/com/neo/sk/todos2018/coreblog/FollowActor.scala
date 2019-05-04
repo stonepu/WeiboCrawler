@@ -28,8 +28,8 @@ object FollowActor {
 
   case object StartWork extends FollowCommand
   case object WorkOtherPage extends FollowCommand
-  case class GetRemainingPageUrl(url: String, home: String, page: Int) extends FollowCommand
-  case class FetchUrl(url: String, home: String) extends  FollowCommand
+  case class GetRemainingPageUrl(url: String, home: String, page: Int, isBupt: Boolean=false) extends FollowCommand
+  case class FetchUrl(url: String, home: String, isBupt: Boolean=false) extends  FollowCommand
 
   def init(url: String, home: String
            ): Behavior[FollowCommand] = {
@@ -63,12 +63,12 @@ object FollowActor {
                 BlogUserDao.updateFollow(homes, urlList.mkString("|")+"|")
                 spiderActor ! Spider.GetUrlFromFol(urlList)
               }
-              ctx.self ! GetRemainingPageUrl(url, homes, page)
+              ctx.self ! GetRemainingPageUrl(url, homes, page, true)
             }
           }
           Behaviors.same
 
-        case FetchUrl(url, home) =>
+        case FetchUrl(url, home, isBupt) =>
           crawl.fetch(url).onComplete{t =>
             val html = t.toString
             if(html.length < 10) {
@@ -76,7 +76,7 @@ object FollowActor {
               log.error(s"======get url $url error!,重新请求=======")
               spiderActor ! Spider.WaitAMin
               Thread.sleep(Random.nextInt(15) * 1000 + 10000)
-              ctx.self ! FetchUrl(url, home)
+              ctx.self ! FetchUrl(url, home, isBupt)
             }
             else {
               val urlList = crawl.parseFollow(html)
@@ -85,14 +85,14 @@ object FollowActor {
                 BlogUserDao.updateFollow(home, urlList.mkString("|")+"|")
               }
               val page = crawl.getPage(html)//解析第一页数据
-              ctx.self ! GetRemainingPageUrl(url, home, page)
+              ctx.self ! GetRemainingPageUrl(url, home, page, isBupt)
             }
           }
           Behaviors.same
 
-        case GetRemainingPageUrl(url, home, page) =>
+        case GetRemainingPageUrl(url, home, page, isBupt) =>
           if(page > 1){
-            val pages = if(page > 100) 100 else page
+            val pages = if(page>5 && !isBupt) 5 else if(page>20 && isBupt) 20 else page
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
               hash.enqueue((urlPage, home))

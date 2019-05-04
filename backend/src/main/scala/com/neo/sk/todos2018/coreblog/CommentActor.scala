@@ -59,7 +59,7 @@ object CommentActor {
         case FetchUrl =>
           if(!hash.isEmpty){
             val url = hash.dequeue()
-            println(s"=====comment working: ${url._1} ======")
+//            println(s"=====comment working: ${url._1} ======")
             crawl.fetch(url._1).onComplete{t=>
               val html = t.get
               if(html.length > 10){

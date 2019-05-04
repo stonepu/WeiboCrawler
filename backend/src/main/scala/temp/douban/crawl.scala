@@ -178,8 +178,9 @@ object crawl extends HttpUtil {
 	}
 
 	val cookieList = List(
-		"_T_WM=17469583510; ALF=1559375170; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwreekDPo09V3_cEa7FIrerPIUdALg0xZc0xcW1rHylCLg4.; SUB=_2A25xztPMDeRhGeNI6FYR8yvJyDWIHXVTMP2ErDV6PUJbktBeLWyhkW1NSGkjdYAMvUx9moCVK3fbtkxhif5nqIB9; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K-hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0OMkbVqCCFxOcm; SSOLoginState=1556784028",
+		"_T_WM=17469583510; ALF=1559550984; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwreINa8hgKoIeOUg8Th37KFfwk5Zu_zW4mebS_68H1_M6o.; SUB=_2A25xySI1DeRhGeNI6FYR8yvJyDWIHXVTMk59rDV6PUJbktBeLRj5kW1NSGkjdRPqXEIh-UyGcrPizKUpe2Oai7At; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K-hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0P1MtLiqyTq2ic; SSOLoginState=1556959845",
 		"_T_WM=67c43fc6f07d6f0bc72e12396c9dc229; SSOLoginState=1554627766; ALF=1557219487; SUB=_2A25xrczmDeRhGeNH7VsQ9C_JzTSIHXVTUdSurDV6PUJbkdAKLW3ckW1NSpiROQP1DU4E49KOlh2-KiHKv4lJBgWv; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5KzhUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0Jvg3Ot-4bKQPU; TMPTOKEN=a8peEGyfaQWUEbFl5ECpH5NUk4vYPLy2RcWuvsoJodvEYtvQWQrIX1ewMG0EnHTA; SCF=ApsGpacAzIDugActkKF_v8mNBt3OAN6cyB8pmXjH4RVCzuDix4OyuRYuOvuM_SmNg8T4VDLSJuj4ugq68IRzE0k."
+
 	)
 
 	val cookie = cookieList(0)
@@ -541,8 +542,8 @@ object crawl extends HttpUtil {
 		for(element<- elements){
 			if((!element.toString.contains("查看更多热门")) && element.select("a[href]").length>0){
 				val reviewer = "https://weibo.cn" + element.select("a[href]")(0).attr("href")
-				println("======reviewer======")
-				println(reviewer)
+//				println("======reviewer======")
+//				println(reviewer)
 				val contentTemp = element.getElementsByClass("ctt")(0).text()
 				val content = if(contentTemp.split(":").length>1) contentTemp.split(":")(1) else contentTemp
 				val pattern = "@(.*?):".r
@@ -577,14 +578,14 @@ object crawl extends HttpUtil {
 	}
 
   def parseComment(html: String, commentUrl: String): Int = {
-		println("=====comming to parseComment======")
+		//println("=====comming to parseComment======")
     val doc = Jsoup.parse(html).body()
     val elements = doc.getElementsByClass("c").drop(4).dropRight(1)
 		for(element<- elements){
 			if((!element.toString.contains("查看更多热门")) && element.select("a[href]").length>0 ){
 				val reviewer =  "https://weibo.cn" + element.select("a[href]")(0).attr("href")
-				println("======reviewer======")
-				println(reviewer)
+//				println("======reviewer======")
+//				println(reviewer)
 				val contentTemp = element.getElementsByClass("ctt")(0).text()
 				val content = if(contentTemp.split(":").length>=2) contentTemp.split(":")(1) else contentTemp
 				val pattern = "@(.*?):".r
@@ -614,32 +615,29 @@ object crawl extends HttpUtil {
   }
 
 	def parseHot(html: String) = {
+		println("======parseHot========")
 		val doc = Jsoup.parse(html).body()
 		val data = doc.getElementsByClass("data")(0)
 		val tbody = data.getElementsByTag("tbody")(0).select("tr")
 		for(tr<- tbody){
-			val rank = tr.getElementsByClass("td-01").text().toInt
+			val rank = if(tr.getElementsByClass("td-01").text()!="")tr.getElementsByClass("td-01").text().toInt else 0
 			val class2 = tr.getElementsByClass("td-02")
 			val textTemp = class2.text().split(" ")
-			val text = textTemp(0)
-			val hotNum = textTemp(1).toInt
-			val url = "https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
+			val text = if(textTemp.length <= 2) textTemp(0) else textTemp.dropRight(1).mkString(" ")
+			val hotNum = if(textTemp.length>1) textTemp(textTemp.length-1).toLong else 0L
+			val url = if(!class2(0).select("a[href]").attr("href").contains("javascript:void(0)"))
+				"https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
+			else {
+				"https://s.weibo.com/" + class2(0).select("a[href]").attr("href_to")
+			}
+			//					println(s"==========")
+			//					println(rank)
+			//					println(text)
+			//					println(hotNum)
+			//					println(url)
 			realtimehotDao.addHot(Some(rank), Some(text), Some(hotNum), url)
 		}
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 	//=================================
@@ -666,11 +664,33 @@ object crawl extends HttpUtil {
 
 		val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
 		val s= "https://s.weibo.com/weibo?q=杨幂 健美短裤&amp;Refer=top"
-		getRequestSend("get",comUrl , paras, headerss, "UTF-8").map{
+		getRequestSend("get",hotUrl , paras, headerss, "UTF-8").map{
 			case Right(value) =>
 				val doc = Jsoup.parse(value).body()
-        println(doc)
-    	case Left(error) =>
+				//println(doc)
+				val data = doc.getElementsByClass("data")(0)
+				val tbody = data.getElementsByTag("tbody")(0).select("tr")
+				//println(tbody.length)
+				for(tr<- tbody){
+					val rank = if(tr.getElementsByClass("td-01").text()!="")tr.getElementsByClass("td-01").text().toInt else 0
+					val class2 = tr.getElementsByClass("td-02")
+					val textTemp = class2.text().split(" ")
+					val text = if(textTemp.length <= 2) textTemp(0) else textTemp.dropRight(1).mkString(" ")
+					val hotNum = if(textTemp.length>1) textTemp(textTemp.length-1).toLong else 0L
+					val url = if(!class2(0).select("a[href]").attr("href").contains("javascript:void(0)"))
+						"https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
+					else {
+						"https://s.weibo.com/" + class2(0).select("a[href]").attr("href_to")
+					}
+//					println(s"==========")
+					println(rank)
+					println(text)
+					println(hotNum)
+					println(url)
+					//realtimehotDao.addHot(Some(rank), Some(text), Some(hotNum), url)
+				}
+
+			case Left(error) =>
 				println(s"=====error:$error")
 		}
 
