@@ -22,7 +22,7 @@ object UserDAO {
 
   def addUser(username: String, password: String) = {
     val addUser =
-      tBloguser += rBloguser(nickname = Some(username), password = Some(password))
+      tBloguser += rBloguser(nickname = Some(username), password = Some(password), u2int = -1)
     db.run(addUser)
   }
 

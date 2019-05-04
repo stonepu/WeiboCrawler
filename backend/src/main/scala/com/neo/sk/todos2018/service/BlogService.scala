@@ -10,8 +10,12 @@ import com.neo.sk.todos2018.models.dao.{ToDoListDAO, UserDAO}
 import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
 import com.neo.sk.todos2018.service.SessionBase.{SessionKeys, SessionTypeKey}
 import com.neo.sk.todos2018.shared.ptcl.BlogPtcl._
-import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao}
+import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, matrixDao}
 import com.neo.sk.todos2018.shared.ptcl.{ErrorRsp, SuccessRsp}
+import com.neo.sk.todos2018.shared.ptcl.BlogPtcl.CommonReq
+import io.circe.syntax._
+import io.circe.parser._
+import io.circe.generic.auto._
 
 import scala.concurrent.{Await, Future}
 import com.neo.sk.todos2018.ptcl.Protocols.parseError
@@ -264,8 +268,47 @@ trait BlogService extends ServiceUtils with SessionBase{
     )
   }
 
+  val sendMatrix = (path("sendMatrix") & get){
+    parameter('id.as[String]){ id =>
+      dealFutureResult(
+        matrixDao.getMatrix().map{ t =>
+          val list = ListBuffer[MatrixElement]()
+          t.foreach(ele => list+=MatrixElement(ele._1, ele._2, ele._3, ele._4))
+          complete(list.toList.asJson.noSpaces)
+        }
+      )
+    }
+  }
+
+  val getMatrix = (path("getMatrix") & post & pathEndOrSingleSlash){
+    entity(as[Either[Error, Json]]){
+      case Left(error) =>
+        println(error)
+        println(error)
+        println(error)
+        println(error)
+        println(error)
+        log.error(s"some error: $error")
+        complete(parseError)
+      case Right(value) =>
+        dealFutureResult(
+          Future{
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println("=====get data form python=========")
+            println(value)
+            complete(SuccessRsp)
+          }
+        )
+    }
+  }
+
   val BlogRoutes: Route =
     pathPrefix("blog") {
-      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~ getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage
+      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~ getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~ sendMatrix ~ getMatrix
     }
 }

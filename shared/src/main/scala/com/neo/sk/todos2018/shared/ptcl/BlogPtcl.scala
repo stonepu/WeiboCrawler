@@ -1,6 +1,7 @@
 package com.neo.sk.todos2018.shared.ptcl
 
 object BlogPtcl {
+  case class CommonReq()
   case class CommonRsp(errCode: Int=0,
                        msg: String="ok")
   case class GetContentReq(
@@ -64,4 +65,17 @@ object BlogPtcl {
 
   case class LikeReq(commentUrl: String,
                      like: String)
+
+  case class MatrixElement(user: Int,
+                           item: Int,
+                           score: Int,
+                           time: Long)
+
+  case class Matrix(element: List[MatrixElement])
+
+  case class MatrixInfo(user: Int,
+                        item: Int)
+  case class Matrixes(matrixInfo: List[MatrixInfo])
+
+  case class JsonString(json: String)
 }

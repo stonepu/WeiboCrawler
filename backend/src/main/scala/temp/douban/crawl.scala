@@ -178,11 +178,11 @@ object crawl extends HttpUtil {
 	}
 
 	val cookieList = List(
-		"_T_WM=5947a1d702c4dbdd4e454ec2179b1dfa; SCF=ApADI1wos8wHnm2s8fcD32DDN4QwoNYISvMiN4cWg8YgdVJgfsb1A0ghTb1X5AKV2ptdzZz9i9fVbWEmCCkau8M.; SUB=_2A25xrczyDeRhGeNI6FYR8yvJyDWIHXVTUdS6rDV6PUJbkdAKLW3fkW1NSGkjdSGglnBv3aj5PySK2iUnThRO5DSp; SUHB=08J7Oocqc1K_5p; SSOLoginState=1554627746",
+		"_T_WM=17469583510; ALF=1559375170; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwreekDPo09V3_cEa7FIrerPIUdALg0xZc0xcW1rHylCLg4.; SUB=_2A25xztPMDeRhGeNI6FYR8yvJyDWIHXVTMP2ErDV6PUJbktBeLWyhkW1NSGkjdYAMvUx9moCVK3fbtkxhif5nqIB9; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K-hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0OMkbVqCCFxOcm; SSOLoginState=1556784028",
 		"_T_WM=67c43fc6f07d6f0bc72e12396c9dc229; SSOLoginState=1554627766; ALF=1557219487; SUB=_2A25xrczmDeRhGeNH7VsQ9C_JzTSIHXVTUdSurDV6PUJbkdAKLW3ckW1NSpiROQP1DU4E49KOlh2-KiHKv4lJBgWv; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5KzhUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0Jvg3Ot-4bKQPU; TMPTOKEN=a8peEGyfaQWUEbFl5ECpH5NUk4vYPLy2RcWuvsoJodvEYtvQWQrIX1ewMG0EnHTA; SCF=ApsGpacAzIDugActkKF_v8mNBt3OAN6cyB8pmXjH4RVCzuDix4OyuRYuOvuM_SmNg8T4VDLSJuj4ugq68IRzE0k."
 	)
 
-	val cookie = cookieList(Random.nextInt(2))
+	val cookie = cookieList(0)
 	val urltest = "https://weibo.com/p/1003061496852380/follow?from=page_100306&wvr=6&mod=headfollow#place\\"
 	val uRL = "https://login.sina.com.cn/signup/signin.php?entry=sso"//登录
 	val uus="https://weibo.com/u/5634035539/home?topnav=1&wvr=6"
@@ -194,7 +194,8 @@ object crawl extends HttpUtil {
 			//"SINAGLOBAL=9048432341155.57.1554031559560; un=17730044033; wvr=6; wb_timefeed_5634035539=1; wb_view_log_5634035539=1536*8641.25; UOR=,,www.baidu.com; wb_view_log=1536*8641.25; webim_unReadCount=%7B%22time%22%3A1554095885956%2C%22dm_pub_total%22%3A0%2C%22chat_group_pc%22%3A0%2C%22allcountNum%22%3A33%2C%22msgbox%22%3A0%7D; _s_tentry=-; Apache=2725753084875.1333.1554096046003; ULV=1554096046957:3:2:3:2725753084875.1333.1554096046003:1554080752647; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5KMhUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; ALF=1585634343; SSOLoginState=1554098344; YF-V5-G0=3717816620d23c89a2402129ebf80935; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwrewW-JC3niEqvpJ75WI1OIRxtAXWVT9tgk4bWbGGnUaX4.; SUB=_2A25xpdj5DeRhGeNI6FYR8yvJyDWIHXVS000xrDV8PUNbmtBeLUnskW9NSGkjdXN_pWAjNAsR-FuqunU0jcBxeCtl; SUHB=0wn1n54xoyN3IO; YF-Page-G0=854ebb7f403eecfa60ed1f0e977c6825|1554098346|1554098343"),
 			//"SINAGLOBAL=9048432341155.57.1554031559560; un=17730044033; wvr=6; wb_timefeed_5634035539=1; UOR=,,www.baidu.com; Ugrow-G0=7e0e6b57abe2c2f76f677abd9a9ed65d; login_sid_t=dbf163e5b49df77c94b402d3f9720e82; cross_origin_proto=SSL; YF-V5-G0=c998e7c570da2f8537944063e27af755; WBStorage=201904021042|undefined; wb_view_log=1536*8641.25; _s_tentry=passport.weibo.com; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K2hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; ALF=1585708956; SSOLoginState=1554172957; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwreuFond43HzQ4dMtXcaeFitrSgojdDSdNOScMku4bm7Bs.; SUB=_2A25xprxODeRhGeNI6FYR8yvJyDWIHXVS1aqGrDV8PUNbmtBeLXPNkW9NSGkjdVd_n55khHzEQWQWZVq5ZLBPukUu; SUHB=0S7C1RjyRyIJUL; Apache=1417573889845.9001.1554172960231; ULV=1554172960239:4:3:4:1417573889845.9001.1554172960231:1554096046957; YF-Page-G0=46f5b98560a83dd9bfdd28c040a3673e|1554172965|1554172965; wb_view_log_5634035539=1536*8641.25; webim_unReadCount=%7B%22time%22%3A1554172967160%2C%22dm_pub_total%22%3A0%2C%22chat_group_pc%22%3A0%2C%22allcountNum%22%3A32%2C%22msgbox%22%3A0%7D"),
 			//"__T_WM=8804be73cafed6c5cba7d62d974d3ff7; SUB=_2A25xpr6VDeRhGeNI6FYR8yvJyDWIHXVTaMLdrDV6PUJbkdANLUfNkW1NSGkjdQKJkcPzi00rLUp33Sub7t1hMrFB; SUHB=0YhR3CdUYrckQr; SCF=ArXy39TfU9eDr_REvj4APwAVXexPhyCq4_1QxFRKnISZE_JJxTk_dO99jJhFI6odGVWpWV_BHKgB5if7H97OH4w.; SSOLoginState=1554173637"),
-			"_T_WM=5947a1d702c4dbdd4e454ec2179b1dfa; SCF=ApADI1wos8wHnm2s8fcD32DDN4QwoNYISvMiN4cWg8YgdVJgfsb1A0ghTb1X5AKV2ptdzZz9i9fVbWEmCCkau8M.; SUB=_2A25xrczyDeRhGeNI6FYR8yvJyDWIHXVTUdS6rDV6PUJbkdAKLW3fkW1NSGkjdSGglnBv3aj5PySK2iUnThRO5DSp; SUHB=08J7Oocqc1K_5p; SSOLoginState=1554627746"),
+			//"_T_WM=5947a1d702c4dbdd4e454ec2179b1dfa; SCF=ApADI1wos8wHnm2s8fcD32DDN4QwoNYISvMiN4cWg8YgdVJgfsb1A0ghTb1X5AKV2ptdzZz9i9fVbWEmCCkau8M.; SUB=_2A25xrczyDeRhGeNI6FYR8yvJyDWIHXVTUdS6rDV6PUJbkdAKLW3fkW1NSGkjdSGglnBv3aj5PySK2iUnThRO5DSp; SUHB=08J7Oocqc1K_5p; SSOLoginState=1554627746"),
+			cookie),
 
 		("User-Agent","Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/72.0.3626.121 Safari/537.36"))
 	val paras = List[(String, String)](("from","page_100306"))
@@ -312,8 +313,11 @@ object crawl extends HttpUtil {
     //println(s"=====开始解析$url ========")
 		if(html.length > 10){
 			val doc = Jsoup.parse(html).body()
-			var name = doc.getElementsByClass("ut")(0).text().split(" ")(0)
+			var name = if(doc.getElementsByClass("ut").length>0) doc.getElementsByClass("ut")(0).text() else ""
+			name = if(name.contains(" ")) name.split(" ")(0) else name
 			if(name.contains("的微博")) name = name.dropRight(3)
+			if(name.endsWith("的微博")) name = name.replace("的微博", "")
+			println(s"article author: $name")
 			val contents = doc.getElementsByClass("c").drop(1).dropRight(2)
       //println(s"===contents.length = ${contents.length}=====")
       //println(contents(0))
@@ -445,7 +449,7 @@ object crawl extends HttpUtil {
 			val doc = Jsoup.parse(html).body()
 			val info = if(doc.getElementsByClass("ut").length>0) doc.getElementsByClass("ut")(0).select("a[href]") else doc.select("a[href]")
 			val patternInfo = "([0-9]*)/info".r
-			val infoUrl = patternInfo.findFirstIn(info.toString).get
+			val infoUrl = patternInfo.findFirstIn(info.toString).getOrElse("")
 			urlMap("info") = "https://weibo.cn/" + infoUrl
 			val blog = doc.getElementsByClass("tip2")(0).getElementsByClass("tc").text().drop(3).dropRight(1)
 			//urlMap("blog") = blog
@@ -467,6 +471,7 @@ object crawl extends HttpUtil {
 		var str = ""
 		headerss = headerss.drop(1)
 		headerss = ("cookie", cookieList(Random.nextInt(2)))::headerss
+		//headerss = ("cookie", cookieList(0))::headerss
 		getRequestSend("get", url, paras, headerss, "UTF-8").map{
 			case Right(value) =>
 				str = value
@@ -645,27 +650,14 @@ object crawl extends HttpUtil {
 		val myfans = "https://weibo.cn/1746227731/fans"
 		val sunurl = "https://weibo.cn/sunsonglin"
 		val comUrl = "https://weibo.cn/comment/HpD0ovCTr?uid=2140522467&rl=0#cmtfrm"
+		val homeUrl = "https://weibo.cn/u/3043820540"
 
 		val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
 		val s= "https://s.weibo.com/weibo?q=杨幂 健美短裤&amp;Refer=top"
-		getRequestSend("get",hotUrl , paras, headerss, "UTF-8").map{
+		getRequestSend("get",homeUrl , paras, headerss, "UTF-8").map{
 			case Right(value) =>
 				val doc = Jsoup.parse(value).body()
-        //println(doc)
-				val data = doc.getElementsByClass("data")(0)
-				val tbody = data.getElementsByTag("tbody")(0).select("tr")
-				for(l<- tbody){
-					val rank = l.getElementsByClass("td-01").text()
-					val class2 = l.getElementsByClass("td-02")
-					val text = class2.text()
-					val url = "https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
-
-					println(s"rank: $rank")
-					println(s"text: $text")
-					println(s"url: $url")
-					println("===============")
-				}
-			//	println(data)
+        println(doc)
     	case Left(error) =>
 				println(s"=====error:$error")
 		}
