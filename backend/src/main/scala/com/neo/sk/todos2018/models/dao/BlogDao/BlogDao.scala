@@ -80,4 +80,9 @@ object BlogDao {
     db.run(times)
   }
 
+  def blog2num(commentUrl: String) = {
+    val num = tBlog.filter(_.commenturl === commentUrl).map(p => p.item2int).result
+    db.run(num)
+  }
+
 }

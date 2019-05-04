@@ -24,10 +24,10 @@ import org.scalajs.dom.raw.HTMLElement
 import scala.xml.Node
 
 class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
-  val nameTemp = "考研政治徐涛"
   val contentList = Var(List.empty[BlogInfo])
                                     //content, commentUrl, like, forward, comment
   val infoList = Var(List.empty[UserInfo])
+  val hotList = Var(List.empty[HotInfo])
   private val pageLimit = 10
   private val pageVar = Var(1,100)
   private val pageVars = Var(1, 2, 3, 4, 5)
@@ -153,6 +153,17 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
     else if(show == 3) getContentByPage(nickname, page)
   }
 
+  def getHot(): Unit = {
+    val url = Routes.Blog.getHot
+    Http.getAndParse[GetHotRsp](url).map{
+      case Left(error) =>
+        JsFunc.alert(s"请求数据失败")
+        println(s"some error: $error")
+      case Right(rsp) =>
+        hotList := rsp.hotList
+    }
+  }
+
   val left: Var[Node] = Var(
     <div class="col-xs-2" style="margin-top:15px; color:#fff; background-color:rgba(0,0,0,0.2); overflow:hidden;">
       <div style="text-align:center; margin-top:15px">
@@ -188,6 +199,18 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
             <span>{TimeTool.dateFormatDefault(l.time)}</span>
           </div>
           <!--<hr/>-->
+        </div>
+      }
+    }
+    </div>
+  }
+
+  val hotListRx = hotList.map{
+    case Nil => <div></div>
+    case list => <div>{list.distinct.map{l =>
+        <div>{l.rank}
+          <span><a href={l.url}>{l.title}</a></span>
+          <span>{l.hotNum}</span>
         </div>
       }
     }
@@ -285,7 +308,9 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
   val right: Var[Node] = Var(
     <div class="col-xs-3" style="margin-top:15px; text-align:left;">
       {infoRx}
-      <div style="height:400px; margin-top:15px; background:#fff;"><font size="4">Recommendation</font></div>
+      <div style="height:400px; margin-top:15px; background:#fff;">
+        {hotListRx}
+      </div>
     </div>
   )
 
@@ -312,6 +337,7 @@ class BreakingBad(nickname: String, isHome: Boolean=true) extends Index {
     if(isHome) followByPage(nickname, 1)
     else getContentByPage(nickname, 1)
     getInfo(nickname)
+    getHot()
     <div class="container">
       <div class="row">
         <div class="col-md-12" style="margin-top:1px;">

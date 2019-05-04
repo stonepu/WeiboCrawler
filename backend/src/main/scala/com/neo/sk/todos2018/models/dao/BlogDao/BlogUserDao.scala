@@ -35,7 +35,6 @@ object BlogUserDao {
                  region: Option[String], birth: Option[String],
                  photo: Option[String], follow: Option[String],
                  fans: Option[String], password: Option[String] = Some("123")) = {
-    println(s"更新用户： $nickname")
     findUser(homeUrl.get).map{tempImag =>
       if(tempImag.isEmpty) {
         addUser(nickname, homeUrl, imageUrl, gender, certification, introduction,
@@ -75,7 +74,7 @@ object BlogUserDao {
 
 
   def updateFollow(home: String, follow: String) = {
-    println(s"====== $home 's follow 更新中")
+    //println(s"====== $home 's follow 更新中")
     getFollow(home = home).onComplete{ t=>
       val list = t.get.toList
       if(list.length==0){
@@ -89,7 +88,7 @@ object BlogUserDao {
   }
 
   def updateFans(home: String, fans: String) = {
-    println(s"====== $home 's fans 更新中")
+    //println(s"====== $home 's fans 更新中")
     getFans(home = home).onComplete{ t=>
       val list = t.get.toList
       if(list.length==0){
@@ -101,6 +100,11 @@ object BlogUserDao {
         db.run(tBloguser.filter(_.homeurl === home).map(p => p.fans).update(Some((list.head.get+fans).split("\\|").toList.distinct.mkString("|")+"|")))
       }
     }
+  }
+
+  def url2num(home: String) = {
+    val num = tBloguser.filter(_.homeurl === home).map(p => p.u2int).result
+    db.run(num)
   }
 
 /*

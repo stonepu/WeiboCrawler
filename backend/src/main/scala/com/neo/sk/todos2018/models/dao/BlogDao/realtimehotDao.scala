@@ -15,4 +15,13 @@ object realtimehotDao {
     val hot = tRealtimehot += rRealtimehot(rank, title, hotNum, url)
     db.run(hot)
   }
+
+  def dtl() = {
+    db.run(tRealtimehot.filter(p => !(p.url === "")).delete)
+  }
+
+  def getHot() = {
+    db.run(tRealtimehot.filter(p => !(p.url===""))
+      .map(t =>(t.rank, t.title, t.hotnum, t.url)).result)
+  }
 }

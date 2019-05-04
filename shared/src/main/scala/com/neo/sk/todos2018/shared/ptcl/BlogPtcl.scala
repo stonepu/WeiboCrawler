@@ -73,9 +73,10 @@ object BlogPtcl {
 
   case class Matrix(element: List[MatrixElement])
 
-  case class MatrixInfo(user: Int,
-                        item: Int)
-  case class Matrixes(matrixInfo: List[MatrixInfo])
+  case class HotInfo(rank: Int,
+                     title: String,
+                     hotNum: Long,
+                     url: String)
 
-  case class JsonString(json: String)
+  case class GetHotRsp(hotList: List[HotInfo])
 }

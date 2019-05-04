@@ -47,7 +47,9 @@ object Boot extends HttpService {
   val urlFans = "https://weibo.cn/5634035539/fans"
   val urlInfo = "https://weibo.cn/5634035539/info"
   val urlMyArticle = "https://weibo.cn/5634035539/profile"
+  val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
 
+  val hotActor = system.spawn(HotActor.init(hotUrl), name = "hot")
   val commentActor = system.spawn(CommentActor.behavior, name="comment")
   val articleActor = system.spawn(ArticleActor.init(urlMyArticle, commentActor), name = "article")
   val infoActor = system.spawn(InfoActor.init(urlInfo), name="info")

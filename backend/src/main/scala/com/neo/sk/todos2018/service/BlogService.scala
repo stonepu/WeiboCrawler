@@ -10,7 +10,7 @@ import com.neo.sk.todos2018.models.dao.{ToDoListDAO, UserDAO}
 import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
 import com.neo.sk.todos2018.service.SessionBase.{SessionKeys, SessionTypeKey}
 import com.neo.sk.todos2018.shared.ptcl.BlogPtcl._
-import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, matrixDao}
+import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, matrixDao, realtimehotDao}
 import com.neo.sk.todos2018.shared.ptcl.{ErrorRsp, SuccessRsp}
 import com.neo.sk.todos2018.shared.ptcl.BlogPtcl.CommonReq
 import io.circe.syntax._
@@ -307,8 +307,21 @@ trait BlogService extends ServiceUtils with SessionBase{
     }
   }
 
+  val getHot = (path("getHot") & get ){
+    userAuth(
+      _ =>
+        dealFutureResult(
+          realtimehotDao.getHot().map{t =>
+            val list = ListBuffer[HotInfo]()
+            t.foreach(info => list += HotInfo(info._1.get, info._2.get, info._3.get, info._4))
+            complete(GetHotRsp(list.toList))
+          }
+        )
+    )
+  }
+
   val BlogRoutes: Route =
     pathPrefix("blog") {
-      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~ getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~ sendMatrix ~ getMatrix
+      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~ getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~ sendMatrix ~ getMatrix ~ getHot
     }
 }

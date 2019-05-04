@@ -9,7 +9,7 @@ import org.apache.http.util.EntityUtils
 import java.io.FileWriter
 import java.util.concurrent.Executor
 
-import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, CommentDao, realtimehotDao}
+import com.neo.sk.todos2018.models.dao.BlogDao._
 import org.apache.http.client.config.{CookieSpecs, RequestConfig}
 import com.neo.sk.todos2018.service.CrawlWorker
 import com.neo.sk.todos2018.utils.{HttpUtil, TimeUtil}
@@ -317,14 +317,11 @@ object crawl extends HttpUtil {
 			name = if(name.contains(" ")) name.split(" ")(0) else name
 			if(name.contains("的微博")) name = name.dropRight(3)
 			if(name.endsWith("的微博")) name = name.replace("的微博", "")
-			println(s"article author: $name")
 			val contents = doc.getElementsByClass("c").drop(1).dropRight(2)
       //println(s"===contents.length = ${contents.length}=====")
       //println(contents(0))
 			if(contents.length > 1)
 				for(content<- contents){
-
-
 					var time = "None"
 					if(content.getElementsByClass("ct").length>0)
 						time = content.getElementsByClass("ct")(0).text()
@@ -349,7 +346,6 @@ object crawl extends HttpUtil {
 
 					if(content.getElementsByClass("cc").length == 0){
 						println("got wrong content!")
-						println(content)
 					}
 					val commentUrl = content.getElementsByClass("cc")(0).attr("href")
 					commentList = commentUrl :: commentList
@@ -506,7 +502,7 @@ object crawl extends HttpUtil {
 		if(html.length > 10){
 			val doc = Jsoup.parse(html)
 			val tables = doc.getElementsByTag("table")
-			println(tables.length)
+			//println(tables.length)
 			for(table<- tables){
 				val url = table.select("a[href]")(0).attr("href")
 				urlList += url
@@ -531,11 +527,11 @@ object crawl extends HttpUtil {
 		input.toInt
 	}
 
-	def judge2Comment(html: String, commentUrl: String) = {
+/*	def judge2Comment(html: String, commentUrl: String) = {
 		val doc = Jsoup.parse(html).body()
 		val timeThing = Await.result(BlogDao.getCTime(commentUrl), Duration.Inf)
 		val timeDao: Long = if(timeThing.length == 0) 0 else timeThing(0).getOrElse(0)
-	}
+	}*/
 
 	def parseIncrementalComment(html: String, commentUrl: String, timeDao: Long, isFirst: Boolean=false): Int = {
 		val doc = Jsoup.parse(html).body()
@@ -543,11 +539,12 @@ object crawl extends HttpUtil {
 		var first = isFirst
 
 		for(element<- elements){
-			if(!element.toString.contains("查看更多热门")){
-				val reviewer = "https://weibo.cn/n/" + element.select("a[href]")(0).text()
-
+			if((!element.toString.contains("查看更多热门")) && element.select("a[href]").length>0){
+				val reviewer = "https://weibo.cn" + element.select("a[href]")(0).attr("href")
+				println("======reviewer======")
+				println(reviewer)
 				val contentTemp = element.getElementsByClass("ctt")(0).text()
-				val content = contentTemp.split(":")(1)
+				val content = if(contentTemp.split(":").length>1) contentTemp.split(":")(1) else contentTemp
 				val pattern = "@(.*?):".r
 				val ss = pattern.findFirstIn(contentTemp).getOrElse("")
 				val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
@@ -565,6 +562,12 @@ object crawl extends HttpUtil {
 				if(timeL > timeDao){
 					CommentDao.addComment(reviewer, reviewed, content, commentUrl, timeL)
 					BlogDao.updateCTime(commentUrl, timeL)
+          val userNum = Await.result(BlogUserDao.url2num(reviewer), Duration.Inf)
+          val user = if(userNum.length>0) userNum(0) else 0
+          val itemNum = Await.result(BlogDao.blog2num(commentUrl), Duration.Inf)
+          val item = if(itemNum.length>0) itemNum(0) else 0
+          if(user != 0 && item != 0)
+            matrixDao.updateElement(user, item, 1, timeL)
 				}
 				else return 0
 				first = false
@@ -574,30 +577,39 @@ object crawl extends HttpUtil {
 	}
 
   def parseComment(html: String, commentUrl: String): Int = {
+		println("=====comming to parseComment======")
     val doc = Jsoup.parse(html).body()
     val elements = doc.getElementsByClass("c").drop(4).dropRight(1)
-    for(element<- elements){
-      if(!element.toString.contains("查看更多热门")){
-        val reviewer = "https://weibo.cn/n/" + element.select("a[href]")(0).text()
+		for(element<- elements){
+			if((!element.toString.contains("查看更多热门")) && element.select("a[href]").length>0 ){
+				val reviewer =  "https://weibo.cn" + element.select("a[href]")(0).attr("href")
+				println("======reviewer======")
+				println(reviewer)
+				val contentTemp = element.getElementsByClass("ctt")(0).text()
+				val content = if(contentTemp.split(":").length>=2) contentTemp.split(":")(1) else contentTemp
+				val pattern = "@(.*?):".r
+				val ss = pattern.findFirstIn(contentTemp).getOrElse("")
+				val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
 
-        val contentTemp = element.getElementsByClass("ctt")(0).text()
-        val content = contentTemp.split(":")(1)
-        val pattern = "@(.*?):".r
-        val ss = pattern.findFirstIn(contentTemp).getOrElse("")
-        val reviewed = if(!ss.isEmpty) "https://weibo.cn/n/" + ss.drop(1).dropRight(1) else ""
-
-        var time = "None"
-        if(element.getElementsByClass("ct").length>0)
-          time = element.getElementsByClass("ct")(0).text()
-        var timeL: Long = 0
-        if(time.startsWith("今天")) timeL = TimeUtil.getTodayStamp(time.split(" ")(1))
-        else if(time.contains("分钟前")) timeL = TimeUtil.minAgo(time.split("分钟前")(0).toInt)
-        else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
-        else if(time.isEmpty) timeL = System.currentTimeMillis()
-        else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
+				var time = "None"
+				if(element.getElementsByClass("ct").length>0)
+					time = element.getElementsByClass("ct")(0).text()
+				var timeL: Long = 0
+				if(time.startsWith("今天")) timeL = TimeUtil.getTodayStamp(time.split(" ")(1))
+				else if(time.contains("分钟前")) timeL = TimeUtil.minAgo(time.split("分钟前")(0).toInt)
+				else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
+				else if(time.isEmpty) timeL = System.currentTimeMillis()
+				else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
+				println("__________add comment__________")
 				CommentDao.addComment(reviewer, reviewed, content, commentUrl, timeL)
-      }
-    }
+				val userNum = Await.result(BlogUserDao.url2num(reviewer), Duration.Inf)
+				val user = if(userNum.length>0) userNum(0) else 0
+				val itemNum = Await.result(BlogDao.blog2num(commentUrl), Duration.Inf)
+				val item = if(itemNum.length>0) itemNum(0) else 0
+				if(user != 0 && item != 0)
+					matrixDao.updateElement(user, item, 1, timeL)
+			}
+		}
     0
   }
 
@@ -654,7 +666,7 @@ object crawl extends HttpUtil {
 
 		val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
 		val s= "https://s.weibo.com/weibo?q=杨幂 健美短裤&amp;Refer=top"
-		getRequestSend("get",homeUrl , paras, headerss, "UTF-8").map{
+		getRequestSend("get",comUrl , paras, headerss, "UTF-8").map{
 			case Right(value) =>
 				val doc = Jsoup.parse(value).body()
         println(doc)

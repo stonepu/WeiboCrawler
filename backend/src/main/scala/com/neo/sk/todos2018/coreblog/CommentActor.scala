@@ -59,6 +59,7 @@ object CommentActor {
         case FetchUrl =>
           if(!hash.isEmpty){
             val url = hash.dequeue()
+            println(s"=====comment working: ${url._1} ======")
             crawl.fetch(url._1).onComplete{t=>
               val html = t.get
               if(html.length > 10){
@@ -69,8 +70,8 @@ object CommentActor {
                   crawl.parseComment(html, url._1)
                   ctx.self ! GetRemainingPageUrl(url._1, page, false)
                 }else{
-                  val timeDao = Await.result(BlogDao.getCTime(url._1), Duration.Inf)(0).get
-                  crawl.parseIncrementalComment(html, url._1,timeDao)
+                  val timeDao = Await.result(BlogDao.getCTime(url._1), Duration.Inf)(0).getOrElse(0L)
+                  crawl.parseIncrementalComment(html, url._1, timeDao = timeDao)
                   ctx.self ! GetRemainingPageUrl(url._1, page, true, timeDao)
                 }
               } else{
@@ -118,8 +119,8 @@ object CommentActor {
         case GetUrl(urlList) =>
           urlList.foreach(t => hash.enqueue((t, 0)))
           if(hash.length == urlList.length) ctx.self ! FetchUrl
+          //ctx.self ! FetchUrl
           Behaviors.same
-
 
         case FinishWork =>
           if(invalidSet.toList.length>1000000) invalidSet.clear()
