@@ -40,6 +40,7 @@ object Spider {
   case object WaitAMin extends SpiderCommand
   case class GetUrlFromFol(urlList: List[String]) extends SpiderCommand
   case class GetUrlFromFans(urlList: List[String]) extends SpiderCommand
+  case class GetUrlFromComment(urlList: List[String]) extends SpiderCommand
 
   case class Distribution(url: String) extends SpiderCommand
   case class FailedUrl(url: String) extends SpiderCommand
@@ -99,6 +100,7 @@ object Spider {
           Behaviors.same
 
         case UpdateUrl=>
+          println("===come to save url====")
           UrlSaveDao.delete()
           hashUrl2Get.foreach(t=> UrlSaveDao.updateUrl(t))
           Behaviors.same
@@ -116,6 +118,12 @@ object Spider {
           Behaviors.same
 
         case GetUrlFromFans(urlList) =>
+          urlList.foreach{url =>
+            hashUrl2Get.enqueue(url)
+          }
+          Behaviors.same
+
+        case GetUrlFromComment(urlList)=>
           urlList.foreach{url =>
             hashUrl2Get.enqueue(url)
           }

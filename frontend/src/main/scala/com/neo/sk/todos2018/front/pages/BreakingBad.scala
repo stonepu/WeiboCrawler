@@ -117,10 +117,31 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
     //dom.window.addEventListener()
   }*/
 
+  def logout(): Unit = {
+    Http.getAndParse[SuccessRsp](Routes.User.logout).map {
+      case Right(rsp) =>
+        if(rsp.errCode == 0) {
+          JsFunc.alert("退出成功")
+          dom.window.location.hash = s"#/Login"
+        } else {
+          JsFunc.alert("退出失败")
+          println(s"logout error, ${rsp.msg}")
+        }
 
+      case Left(e) =>
+        println(s"parse error,$e ")
+    }
+  }
 
-  def move2Watch(nickname: String) = {
-    dom.window.location.hash = s"#/move/$nickname"
+  def move2Comment(comment2Int: Int): Unit = {
+    dom.window.location.hash = s"#/comment/$comment2Int"
+  }
+
+  def storeBlog(content: String, nickname: String="", like: String,
+                comment: String, commentUrl: String): Unit = {
+    DataStore.blog.clear()
+    DataStore.blog += DataStore.BlogInfo(content, nickname, like, comment)
+    DataStore.commentUrl = commentUrl
   }
 
   def getInfo(nickname: String): Unit = {
@@ -169,7 +190,8 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
       <div style="text-align:center; margin-top:15px">
         <div><a href={"#/"+home+"/follow"}><font size="4" color="white">关注</font></a></div>
         <div><a href={"#/"+home+"/fans"}><font size="4" color="white">粉丝</font></a></div>
-        <div><a href="javascript:void(0)"><font size="4" color="white"><a href={"#/Blog/"+home}>回到首页</a></font></a></div>
+        <div><a href={"#/Blog/"+DataStore.home}><font size="4" color="white">回到首页</font></a></div>
+        <div><a href="javascript:void(0)" onclick={()=>logout()}><font size="4" color="white">退出</font></a></div>
       </div>
       <div style="height:300px;font-size:20px;margin-top:15px;text-align:center;line-height:300px">advertisement</div>
       <div style="height:500px"></div>
@@ -194,10 +216,9 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
         <div mhtml-onmount={(e: HTMLElement) =>setContent(e, dealNickname(l.author)+l.content)} style="margin-top:8px; background:#fff; padding:10px 10px 10px 10px;">
           <div>
             <button type="button" class="btn btn-link" onclick={()=>like(l.commentUrl, l.like)}>[赞{l.like}]</button>
-            <button type="button" class="btn btn-link" onclick={()=>}>[评论{l.comment}]</button>
+            <button type="button" class="btn btn-link" onclick={()=>storeBlog(dealNickname(l.author)+l.content, like=l.like, comment=l.comment, commentUrl=l.commentUrl); move2Comment(l.comment2Int)}>[评论{l.comment}]</button>
             <span>{TimeTool.dateFormatDefault(l.time)}</span>
           </div>
-          <!--<hr/>-->
         </div>
       }
     }

@@ -88,7 +88,15 @@ object CommentActor {
             val pages = if(page > 100) 100 else page
             val urlQueue: mutable.Queue[(String, Int)] = mutable.Queue()
             for(i<- 2 to pages){
-              val urlPage = url + s"?page=${i}"
+              val urlPage = if(url.contains("#cmtfrm")) url.replace("#cmtfrm", "") + s"&page=${i}"
+              else {
+                val pattern = "#(.*?)".r
+                val re = pattern.findFirstIn(url).getOrElse("")
+                if(""!=re) url.replace(re, "") + s"&page=$i"
+                else url + s"&page=$i"
+              }
+              println("========comment page url==============")
+              println(urlPage)
               urlQueue.enqueue((urlPage, 0))
             }
             ctx.self ! WorkOtherPage(urlQueue, isIncrement, timeDao)
@@ -110,7 +118,7 @@ object CommentActor {
               }
             }
             if(urlQueue.length > 0){
-              Thread.sleep(Random.nextInt(6)*1000 + 5000)
+              Thread.sleep(Random.nextInt(6)*1000 + 4000)
               ctx.self ! WorkOtherPage(urlQueue, isIncrement)
             }else ctx.self ! FinishWork
           }

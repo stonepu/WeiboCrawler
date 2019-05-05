@@ -6,23 +6,18 @@ import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import com.neo.sk.todos2018.Boot.executor
-import com.neo.sk.todos2018.models.dao.{ToDoListDAO, UserDAO}
-import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
 import com.neo.sk.todos2018.service.SessionBase.{SessionKeys, SessionTypeKey}
 import com.neo.sk.todos2018.shared.ptcl.BlogPtcl._
-import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao, matrixDao, realtimehotDao}
+import com.neo.sk.todos2018.models.dao.BlogDao._
 import com.neo.sk.todos2018.shared.ptcl.{ErrorRsp, SuccessRsp}
-import com.neo.sk.todos2018.shared.ptcl.BlogPtcl.CommonReq
 import io.circe.syntax._
 import io.circe.parser._
 import io.circe.generic.auto._
 
 import scala.concurrent.{Await, Future}
 import com.neo.sk.todos2018.ptcl.Protocols.parseError
-import com.neo.sk.todos2018.utils.TimeUtil
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
@@ -68,7 +63,7 @@ trait BlogService extends ServiceUtils with SessionBase{
           case Right(req) =>
             dealFutureResult(
               BlogDao.getContent(req.nickname).map{ p=>
-                complete(GetContentByPageRsp(p.toList.distinct.map(i => BlogInfo(i._1, i._2, i._3.getOrElse(""), i._4.getOrElse(""), i._5.getOrElse(""), i._6.getOrElse(0L))).slice((req.page-1)*10,req.page*10), p.length))
+                complete(GetContentByPageRsp(p.toList.distinct.map(i => BlogInfo(i._1, i._2, i._3.getOrElse(""), i._4.getOrElse(""), i._5.getOrElse(""), i._6.getOrElse(0L), comment2Int = i._8)).slice((req.page-1)*10,req.page*10), p.length))
               }
             )
         }
@@ -283,23 +278,13 @@ trait BlogService extends ServiceUtils with SessionBase{
   val getMatrix = (path("getMatrix") & post & pathEndOrSingleSlash){
     entity(as[Either[Error, Json]]){
       case Left(error) =>
-        println(error)
-        println(error)
-        println(error)
-        println(error)
-        println(error)
         log.error(s"some error: $error")
         complete(parseError)
       case Right(value) =>
         dealFutureResult(
           Future{
-            println("=====get data form python=========")
-            println("=====get data form python=========")
-            println("=====get data form python=========")
-            println("=====get data form python=========")
-            println("=====get data form python=========")
-            println("=====get data form python=========")
-            println("=====get data form python=========")
+//            println("=====get data form python=========")
+            //fixme 数据处理
             println(value)
             complete(SuccessRsp)
           }
@@ -320,8 +305,29 @@ trait BlogService extends ServiceUtils with SessionBase{
     )
   }
 
+  val getComment = (path("getComment") & post & pathEndOrSingleSlash){
+    userAuth(
+      _ =>
+        entity(as[Either[Error, GetCommentReq]]){
+          case Left(error)=>
+            log.error(s"some error: $error")
+            complete(parseError)
+          case Right(req)=>
+            dealFutureResult(
+              CommentDao.getFirstComment(req.commentUrl).map{t =>
+                val list = ListBuffer[CommentInfo]()
+                t.foreach(info => list+=CommentInfo(info._1, info._2.getOrElse(""), info._3.getOrElse(""), info._4.getOrElse(0L)))
+                complete(GetCommentRsp(list.toList))
+              }
+            )
+        }
+    )
+  }
+
   val BlogRoutes: Route =
     pathPrefix("blog") {
-      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~ getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~ sendMatrix ~ getMatrix ~ getHot
+      getContent ~ getContentByPage ~ logout ~ publishing ~ like ~
+        getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~
+        sendMatrix ~ getMatrix ~ getHot ~ getComment
     }
 }

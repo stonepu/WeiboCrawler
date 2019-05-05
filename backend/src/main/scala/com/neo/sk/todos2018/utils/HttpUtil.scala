@@ -10,6 +10,8 @@ import io.netty.handler.ssl.{SslContext, SslContextBuilder}
 import io.netty.handler.ssl.util.SimpleTrustManagerFactory
 import org.asynchttpclient._
 import org.asynchttpclient.request.body.multipart.FilePart
+import org.asynchttpclient.proxy.ProxyServer
+import org.asynchttpclient.Dsl._
 import org.slf4j.LoggerFactory
 import scala.language.experimental.macros
 import scala.concurrent.{ExecutionContext, Future, Promise}
@@ -182,11 +184,19 @@ trait HttpUtil {
     log.debug(methodName + " parameters=" + parameters)
     val request = ahClient.
       prepareGet(url).
+      //setCookies().
       setFollowRedirect(true).
       setRequestTimeout(20 * 1000).
       addQueryParams(parameters.map { kv => new Param(kv._1, kv._2) }.asJava)
     val cs = Charset.forName(responseCharsetName)
     headers.foreach(h => request.addHeader(h._1,h._2))
+
+
+    //val proxy = new ProxyServer(ProxyServer.Pro)
+    //request.setProxyServer(proxyServer("119.90.126.106", 7777))
+
+
+
     executeRequest(methodName, request, cs)
   }
 

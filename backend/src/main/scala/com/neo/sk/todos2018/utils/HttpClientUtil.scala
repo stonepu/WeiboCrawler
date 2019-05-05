@@ -103,6 +103,8 @@ object HttpClientUtil {
       .setRetryHandler(retryHeader)
       .setDefaultRequestConfig(globalConfig).build()
 
+  val proxy = Some("")
+
   def fetch(url: String, proxyOption: Option[String]=Some(""), headersOp: Option[Array[Header]] = None, cookieStore: Option[CookieStore] = None): Future[Either[String, String]] = {
     Future {
       try {

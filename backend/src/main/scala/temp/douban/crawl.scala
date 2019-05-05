@@ -601,7 +601,7 @@ object crawl extends HttpUtil {
 				else if(time.contains("月")) timeL = TimeUtil.addYear(time.split(" ").take(2).mkString(" "))
 				else if(time.isEmpty) timeL = System.currentTimeMillis()
 				else timeL = TimeUtil.date2TimeStamp(time.split(" ").take(2).mkString(" "))
-				println("__________add comment__________")
+				//println("__________add comment__________")
 				CommentDao.addComment(reviewer, reviewed, content, commentUrl, timeL)
 				val userNum = Await.result(BlogUserDao.url2num(reviewer), Duration.Inf)
 				val user = if(userNum.length>0) userNum(0) else 0

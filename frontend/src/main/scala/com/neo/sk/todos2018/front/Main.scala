@@ -27,6 +27,7 @@ object Main extends PageSwitcher {
       case "move" :: nickname :: Nil => new BreakingBad(URLDecoder.decode(nickname), false).render
       case nickname :: "follow" :: Nil => new Follow(URLDecoder.decode(nickname)).render
       case nickname :: "fans" :: Nil => new Fans(URLDecoder.decode(nickname)).render
+      case "comment" :: comment2Int :: Nil => new Comment(URLDecoder.decode(comment2Int).toInt).render
       case _ => Login.render
     }
   }

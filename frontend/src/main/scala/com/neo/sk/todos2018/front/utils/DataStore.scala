@@ -8,8 +8,15 @@ import org.scalajs.dom.raw.{FileReader, FormData}
 import scala.concurrent.Future
 import mhtml._
 
+import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
+
 
 object DataStore {
+  case class BlogInfo(content: String="",
+                      nickname: String="",
+                      like: String="0",
+                      comment: String="0")
 
   var Res_Ver:List[(Long,Long)] = List.empty[(Long,Long)]
 
@@ -22,7 +29,13 @@ object DataStore {
   val address = prefix + "/cloudy/user/address"
 
   val login = prefix + "/login"
-  
+
+  var home = ""
+
+  var commentUrl = ""
+
+  val blog = ListBuffer[BlogInfo]()
+
   val section0 = List(("论坛使用帮助" , "/board/BBShelp"), ("积分" , "/board/Score"),
     ("帐号事务管理", "/board/ID"), ("版主及助理招聘区", "/board/BM_Market"),
     ("更新与改进", "/board/Progress"), ("意见与建议", "/board/Advice"),

@@ -38,6 +38,7 @@ object Routes {
     val like = baseUrl + "/like"
     val getFollowByPage = baseUrl + "/getFollowByPage"
     val getHot = baseUrl + "/getHot"
+    val getComment = baseUrl + "/getComment"
   }
 
 }

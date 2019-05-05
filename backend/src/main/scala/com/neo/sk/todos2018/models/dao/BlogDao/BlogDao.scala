@@ -3,8 +3,7 @@ package com.neo.sk.todos2018.models.dao.BlogDao
 import com.neo.sk.todos2018.utils.DBUtil.db
 import slick.jdbc.PostgresProfile.api._
 import com.neo.sk.todos2018.models.SlickTables._
-import scala.concurrent.ExecutionContext.Implicits.global
-import com.neo.sk.todos2018.common.AppSettings
+import com.neo.sk.todos2018.Boot.executor
 import org.slf4j.LoggerFactory
 import scala.util.Random
 
@@ -49,7 +48,9 @@ object BlogDao {
   }
 
   def getContent(nickname: String="Non", home: String="Non") = {
-    val content = tBlog.filter(p => p.author === nickname || p.homeurl===home).sortBy(_.time.desc).map(a => (a.content, a.commenturl, a.like, a.forward, a.comment, a.time, a.author)).result
+    val content = tBlog.filter(p => p.author === nickname || p.homeurl===home).sortBy(_.time.desc)
+      .map(a => (a.content, a.commenturl, a.like, a.forward,
+        a.comment, a.time, a.author, a.item2int)).result
     db.run(content)
   }
 

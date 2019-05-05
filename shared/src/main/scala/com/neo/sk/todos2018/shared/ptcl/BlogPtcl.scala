@@ -20,12 +20,13 @@ object BlogPtcl {
                                 page: Int=1
                                 )
   case class BlogInfo(content: String,
-                  commentUrl: String,
-                  like: String,
-                  forward: String,
-                  comment: String,
+                      commentUrl: String,
+                      like: String,
+                      forward: String,
+                      comment: String,
                       time: Long,
-                      author: String="")
+                      author: String="",
+                      comment2Int: Int=0)
 
   case class UserInfo(nickname: String = "None",
                       homeUrl: String = "None",
@@ -79,4 +80,12 @@ object BlogPtcl {
                      url: String)
 
   case class GetHotRsp(hotList: List[HotInfo])
+
+  case class CommentInfo(reviewer: String,
+                         reviewed: String,
+                         content: String,
+                         time: Long)
+
+  case class GetCommentReq(commentUrl: String)
+  case class GetCommentRsp(commentList: List[CommentInfo])
 }
