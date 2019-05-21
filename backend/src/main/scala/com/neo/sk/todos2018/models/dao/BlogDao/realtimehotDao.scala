@@ -12,7 +12,6 @@ object realtimehotDao {
 
   def addHot(rank: Option[Int], title: Option[String],
              hotNum: Option[Long], url: String) = {
-    println("=====addHotting=====")
     val hot = tRealtimehot += rRealtimehot(rank, title, hotNum, url)
     db.run(hot)
   }

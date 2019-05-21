@@ -7,6 +7,8 @@ import org.apache.http.client.methods.HttpGet
 import org.apache.http.impl.client.HttpClients
 import org.apache.http.util.EntityUtils
 import java.io.FileWriter
+import java.io.File
+import java.io.PrintWriter
 import java.util.concurrent.Executor
 
 import com.neo.sk.todos2018.models.dao.BlogDao._
@@ -39,6 +41,7 @@ import scala.io.StdIn
 import scala.util.{Failure, Success}
 import com.neo.sk.todos2018.common.AppSettings._
 import com.neo.sk.todos2018.models.dao.CrawlDAO
+import scala.collection
 
 import java.util.Timer
 import java.util.TimerTask
@@ -178,7 +181,7 @@ object crawl extends HttpUtil {
 	}
 
 	val cookieList = List(
-		"_T_WM=17469583510; ALF=1559550984; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwreINa8hgKoIeOUg8Th37KFfwk5Zu_zW4mebS_68H1_M6o.; SUB=_2A25xySI1DeRhGeNI6FYR8yvJyDWIHXVTMk59rDV6PUJbktBeLRj5kW1NSGkjdRPqXEIh-UyGcrPizKUpe2Oai7At; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K-hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0P1MtLiqyTq2ic; SSOLoginState=1556959845",
+		"_T_WM=eb1ec8ec473bd24ae5b95e232523be80; ALF=1560852865; SCF=AqX-xrLUyp2QwtVSxWgWaojxgaBqxQNcw223M1DPxwrexJA4tpzCWVhkHh7QiTPAKaTsuY84XNGTnGCOMTv7up4.; SUB=_2A25x5nVpDeRhGeNI6FYR8yvJyDWIHXVTKRshrDV6PUJbktAKLWegkW1NSGkjdShwzMCn4i9quwmiaRZ4pR1WNv-b; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5K-hUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0qj0S79aO9rlur; SSOLoginState=1558316344",
 		"_T_WM=67c43fc6f07d6f0bc72e12396c9dc229; SSOLoginState=1554627766; ALF=1557219487; SUB=_2A25xrczmDeRhGeNH7VsQ9C_JzTSIHXVTUdSurDV6PUJbkdAKLW3ckW1NSpiROQP1DU4E49KOlh2-KiHKv4lJBgWv; SUBP=0033WrSXqPxfM725Ws9jqgMF55529P9D9W5GPGZvcSE.QN45i16NBZ065JpX5KzhUgL.Fo-ce0B7e0-fe0.2dJLoIEBLxK.L1-eLBonLxKqLBo5L1KBLxK-LBo5L12qLxKqLBo-LBKqt; SUHB=0Jvg3Ot-4bKQPU; TMPTOKEN=a8peEGyfaQWUEbFl5ECpH5NUk4vYPLy2RcWuvsoJodvEYtvQWQrIX1ewMG0EnHTA; SCF=ApsGpacAzIDugActkKF_v8mNBt3OAN6cyB8pmXjH4RVCzuDix4OyuRYuOvuM_SmNg8T4VDLSJuj4ugq68IRzE0k."
 
 	)
@@ -440,7 +443,7 @@ object crawl extends HttpUtil {
 	}
 
 	def get4Url(html: String) = {
-		val urlList = ListBuffer[String]()
+		//val urlList = ListBuffer[String]()
 		val urlMap = mutable.HashMap[String, String]()
 		if(html.length > 10){
 			val doc = Jsoup.parse(html).body()
@@ -448,17 +451,19 @@ object crawl extends HttpUtil {
 			val patternInfo = "([0-9]*)/info".r
 			val infoUrl = patternInfo.findFirstIn(info.toString).getOrElse("")
 			urlMap("info") = "https://weibo.cn/" + infoUrl
-			val blog = doc.getElementsByClass("tip2")(0).getElementsByClass("tc").text().drop(3).dropRight(1)
+			//val blog = doc.getElementsByClass("tip2")(0).getElementsByClass("tc").text().drop(3).dropRight(1)
 			//urlMap("blog") = blog
-			urlList += blog
-			val relations = doc.getElementsByClass("tip2")(0).select("a[href]")
-			for(link<- relations){
-				val str = "https://weibo.cn"
-				val url = str + link.attr("href")
-				//if(!url.contains("attgroup")) urlList += url
-				if(url.contains("follow")) urlMap("follow") = url
-				else if(url.contains("fans")) urlMap("fans") = url
-				else if(url.contains("at")) urlMap("at") = url
+			//urlList += blog
+			if(doc.getElementsByClass("tip2").length>0){
+				val relations = doc.getElementsByClass("tip2")(0).select("a[href]")
+				for(link<- relations){
+					val str = "https://weibo.cn"
+					val url = str + link.attr("href")
+					//if(!url.contains("attgroup")) urlList += url
+					if(url.contains("follow")) urlMap("follow") = url
+					else if(url.contains("fans")) urlMap("fans") = url
+					else if(url.contains("at")) urlMap("at") = url
+				}
 			}
 		}
 		urlMap
@@ -651,48 +656,159 @@ object crawl extends HttpUtil {
 		val task = new Task()
 		timer.schedule(task, 10, 1000)*/
 
-		val infoUrl = "https://weibo.cn/2058586920/info"
-		val infourl = "https://weibo.cn/2140522467/info"
-		val myurl = "https://weibo.cn/u/5626860132 "
-		val zwurl = "https://weibo.cn/jerrymusic"
-		val zwfollow = "https://weibo.cn/1295674790/follow"
-		val myfollow = "https://weibo.cn/5634035539/follow"
-		val myfans = "https://weibo.cn/1746227731/fans"
-		val sunurl = "https://weibo.cn/sunsonglin"
-		val comUrl = "https://weibo.cn/comment/HpD0ovCTr?uid=2140522467&rl=0#cmtfrm"
-		val homeUrl = "https://weibo.cn/u/3043820540"
+    val comment = Await.result(CommentDao.getComment(), Duration.Inf)
+    val user = Await.result(BlogUserDao.getUser(), Duration.Inf)
+		val blog = Await.result(BlogDao.getBlog(), Duration.Inf)
+		//val interaction = mutable.HashSet[(String, String)]()
+    val user2 = ListBuffer[(String, Int)]()
+		val user3 = mutable.HashMap[String, Int]()
+    var item2= ListBuffer[(String, Int)]()
+    val item3 = mutable.HashMap[String, Int]()
+    val items = mutable.HashSet[String]()
+		val inter = List[(String, Int, Int)]()
+		val inters = mutable.HashMap[String, Int]()
+    var user2item = ListBuffer[(Int, Int)]()
 
-		val hotUrl = "https://s.weibo.com/top/summary?cate=realtimehot"
-		val s= "https://s.weibo.com/weibo?q=杨幂 健美短裤&amp;Refer=top"
-		getRequestSend("get",hotUrl , paras, headerss, "UTF-8").map{
-			case Right(value) =>
-				val doc = Jsoup.parse(value).body()
-				//println(doc)
-				val data = doc.getElementsByClass("data")(0)
-				val tbody = data.getElementsByTag("tbody")(0).select("tr")
-				//println(tbody.length)
-				for(tr<- tbody){
-					val rank = if(tr.getElementsByClass("td-01").text()!="")tr.getElementsByClass("td-01").text().toInt else 0
-					val class2 = tr.getElementsByClass("td-02")
-					val textTemp = class2.text().split(" ")
-					val text = if(textTemp.length <= 2) textTemp(0) else textTemp.dropRight(1).mkString(" ")
-					val hotNum = if(textTemp.length>1) textTemp(textTemp.length-1).toLong else 0L
-					val url = if(!class2(0).select("a[href]").attr("href").contains("javascript:void(0)"))
-						"https://s.weibo.com/" + class2(0).select("a[href]").attr("href")
-					else {
-						"https://s.weibo.com/" + class2(0).select("a[href]").attr("href_to")
-					}
-//					println(s"==========")
-					println(rank)
-					println(text)
-					println(hotNum)
-					println(url)
-					//realtimehotDao.addHot(Some(rank), Some(text), Some(hotNum), url)
-				}
 
-			case Left(error) =>
-				println(s"=====error:$error")
+    var i = 1
+    var u = 1
+
+		for(com<- comment){
+			if(inters.contains(com._1))
+				inters += (com._1 -> (1+inters(com._1)))
+			else{
+        inters += (com._1 -> 1)
+      }
+//      if(!items.contains(com._2.get)){
+//        item2 += ((com._2.get, i))
+//        i += 1
+//        items += com._2.get
+//      }
 		}
+		println(s"inter 的 length = ${inters.size}")
+
+
+		for(b<- blog){
+			if(inters.contains(b._1.get))
+				inters += (b._1.get -> (1+inters(b._1.get)))
+			else{
+        inters += (b._1.get -> 1)
+      }
+//      if(!items.contains(b._2)){
+//        item2 += ((b._2, i))
+//        i += 1
+//        items += (b._2)
+//      }
+		}
+		println(s"inter 的 length = ${inters.size}")
+
+		for(ele<- inters){
+			if(ele._2>=50) {
+        user2 += ((ele._1, u))
+				user3 += (ele._1 -> u)
+        u += 1
+				//BlogUserDao.addUser(homeUrl = Some(ele._1))
+			}else
+				inters -= (ele._1)
+		}
+
+
+    for(com<- comment){
+      if(inters.contains(com._1)){
+        if(!items.contains(com._2.get)){
+          items += com._2.get
+          item2 += ((com._2.get, i))
+          item3 += (com._2.get -> i)
+          i += 1
+        }
+        user2item += ((inters(com._1), item3(com._2.get)))
+      }
+    }
+
+    for(com<- blog){
+      if(inters.contains(com._1.get)){
+        if(!items.contains(com._2)){
+          items += com._2
+          item2 += ((com._2, i))
+          item3 += (com._2 -> i)
+          i += 1
+        }
+        user2item += ((user3(com._1.get), item3(com._2)))
+      }
+    }
+
+		user2item = user2item.sortWith(_._1<_._1)
+
+    println(s"item2.length:${item2.length}")
+    println(s"user2item.length:${user2item.length}")
+
+    val ss = user2item.filter(t => t._1==1)
+    println(ss)
+
+    val filePath = "F:/trainning_data/50data.txt"
+    val file = new File(filePath)
+    val writer = new FileWriter(file, true)
+
+//    for(item<- item2){
+//      val str = item._1 + "::" + item._2 + "\r\n"
+//      writer.write(str)
+//    }
+//		var xx = 1
+//    for(x<- user2item){
+//      val str = x._1 + " " + x._2 + s" 1" +  "\r\n"
+//			xx += 1
+//      writer.write(str)
+//    }
+    writer.close()
+
+
+
+//		for(use<- user){
+//			if(!inters.contains(use)) BlogUserDao.dltUser(use.getOrElse("None"))
+//		}
+
+		println(s"inter 的 length = ${inters.size}")
+
+//    val filePath = "F:/trainning_data/recommendation.txt"
+//    val file = new File(filePath)
+//    val writer = new FileWriter(file, true)
+//    val hashSet = mutable.HashSet[String]()
+//    val hashUserSet = mutable.HashSet[String]()
+//    //val jiaohu = mutable.HashSet[(String, String)]()
+//    var i = 0
+//    var j = 0
+//    var m = 0
+//    for(t<- comment){
+//      m += 1
+//      val user = Await.result(BlogUserDao.url2num(t._1), Duration.Inf)
+//      val item = Await.result(BlogDao.blog2num(t._2.get), Duration.Inf)
+//      if(user.length>0 && item.length>0){
+//        //matrixDao.updateElement(user.head, item.head, 1, 0)
+//        val str = user.head + "::" + item.head + "::" + 1 + "::" + 0 + "\r\n"
+//        if(!hashSet.contains(str)){
+//          i += 1
+//          writer.write(str)
+//          hashSet += str
+//          if(i % 40 == 0) {
+//            print(i)
+//            print("===")
+//            print(m)
+//            print("===")
+//            println(j )
+//          }
+//        }
+//      }else{
+//        if(!hashUserSet.contains(t._1)){
+//          hashUserSet += t._1
+//          j += 1
+//        }
+//      }
+//    }
+//
+//    writer.close()
+//    println("game over!")
+//    //println(i)
+//    println(s"j 个数据库中不重复的数据是+ $j")
 
 
 

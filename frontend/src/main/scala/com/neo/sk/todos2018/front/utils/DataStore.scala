@@ -16,7 +16,8 @@ object DataStore {
   case class BlogInfo(content: String="",
                       nickname: String="",
                       like: String="0",
-                      comment: String="0")
+                      comment: String="0",
+                      time: String="")
 
   var Res_Ver:List[(Long,Long)] = List.empty[(Long,Long)]
 

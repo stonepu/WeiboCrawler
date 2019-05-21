@@ -1,5 +1,7 @@
 package temp.douban
 
+import java.io.{File, FileWriter}
+
 import com.neo.sk.todos2018.models.dao.BlogDao.BlogUserDao
 import com.neo.sk.todos2018.shared.ptcl.BlogPtcl.{GetContentByPageReq, MatrixElement}
 import com.neo.sk.todos2018.utils.TimeUtil
@@ -41,15 +43,14 @@ object future {
 	}
 
 	def main(args: Array[String]): Unit = {
-		val s = "{\"0\":{\"item\":1,\"score\":1,\"time\":111,\"user\":1},\"1\":{\"item\":2,\"score\":3,\"time\":123,\"user\":1}}"
-		val jsonS = JSON.parseFull(s)
-		val sdata = s.asJson
-		val stats = parse(s)
-		val ss = regJson(jsonS)
-		val list = ListBuffer[(Int, Int, Int)]()
-		ss.foreach(t => list +=((t._2("user"), t._2("item"), t._2("score"))))
-		println(list)
-		//Decoder(stats)
+		val s = List(1,2,3,4)
+		val filePath = "F:/trainning_data/user_item.txt"
+		val file = new File(filePath)
+		val writer = new FileWriter(file, true)
+		s.foreach{t =>
+			writer.write(t + "\r\n")
+		}
+		writer.close()
 	}
 	
 }

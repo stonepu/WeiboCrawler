@@ -37,8 +37,8 @@ object matrixDao {
     }
   }
 
-  def getMatrix() = {
-    val list = tUserItem.filter(p => (p.users>0))
+  def getMatrix(id: Int) = {
+    val list = tUserItem.filter(p => (p.users===id))
       .map(t => (t.users, t.item, t.score, t.time)).result
     db.run(list)
   }

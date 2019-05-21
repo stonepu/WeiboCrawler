@@ -86,7 +86,7 @@ object FansActor {
 
         case GetRemainingPageUrl(url, home, page, isBupt) =>
           if(page > 1){
-            val pages = if(page < 20 || isBupt) page else 20
+            val pages = if(page>20 && !isBupt) 20 else if(page>20 && isBupt) 20 else page
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
               hash.enqueue((urlPage, home))
@@ -111,7 +111,7 @@ object FansActor {
               }
             }
             if(hash.length > 0){
-              Thread.sleep(Random.nextInt(6)*1000 + 5000)
+              Thread.sleep(Random.nextInt(6)*1000 + 3000)
               ctx.self ! WorkOtherPage
             }
           }

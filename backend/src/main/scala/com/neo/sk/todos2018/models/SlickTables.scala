@@ -15,7 +15,7 @@ trait SlickTables {
   import slick.jdbc.{GetResult => GR}
 
   /** DDL for all tables. Call .create to execute. */
-  lazy val schema: profile.SchemaDescription = Array(tBlog.schema, tBloguser.schema, tByrbbs.schema, tComment.schema, tFriendship.schema, tRealtimehot.schema, tUrlsave.schema, tUser.schema, tUserItem.schema).reduceLeft(_ ++ _)
+  lazy val schema: profile.SchemaDescription = Array(tBlog.schema, tBloguser.schema, tByrbbs.schema, tComment.schema, tFriendship.schema, tRealtimehot.schema, tRecommendation.schema, tUrlsave.schema, tUser.schema, tUserItem.schema).reduceLeft(_ ++ _)
   @deprecated("Use .schema instead of .ddl", "3.0")
   def ddl = schema
 
@@ -245,6 +245,29 @@ trait SlickTables {
   }
   /** Collection-like TableQuery object for table tRealtimehot */
   lazy val tRealtimehot = new TableQuery(tag => new tRealtimehot(tag))
+
+  /** Entity class storing rows of table tRecommendation
+   *  @param user Database column user SqlType(int4)
+   *  @param item Database column item SqlType(int4) */
+  case class rRecommendation(user: Int, item: Int)
+  /** GetResult implicit for fetching rRecommendation objects using plain SQL queries */
+  implicit def GetResultrRecommendation(implicit e0: GR[Int]): GR[rRecommendation] = GR{
+    prs => import prs._
+    rRecommendation.tupled((<<[Int], <<[Int]))
+  }
+  /** Table description of table recommendation. Objects of this class serve as prototypes for rows in queries. */
+  class tRecommendation(_tableTag: Tag) extends profile.api.Table[rRecommendation](_tableTag, "recommendation") {
+    def * = (user, item) <> (rRecommendation.tupled, rRecommendation.unapply)
+    /** Maps whole row to an option. Useful for outer joins. */
+    def ? = (Rep.Some(user), Rep.Some(item)).shaped.<>({r=>import r._; _1.map(_=> rRecommendation.tupled((_1.get, _2.get)))}, (_:Any) =>  throw new Exception("Inserting into ? projection not supported."))
+
+    /** Database column user SqlType(int4) */
+    val user: Rep[Int] = column[Int]("user")
+    /** Database column item SqlType(int4) */
+    val item: Rep[Int] = column[Int]("item")
+  }
+  /** Collection-like TableQuery object for table tRecommendation */
+  lazy val tRecommendation = new TableQuery(tag => new tRecommendation(tag))
 
   /** Entity class storing rows of table tUrlsave
    *  @param url Database column url SqlType(varchar), Length(100,true) */

@@ -11,7 +11,6 @@ import io.circe.syntax._
 import io.circe.parser._
 import io.circe.generic.auto._
 
-
 import scala.concurrent.ExecutionContext.Implicits.global
 import org.scalajs.dom
 import com.neo.sk.todos2018.front.utils.DataStore
@@ -20,11 +19,12 @@ import mhtml._
 import org.scalajs.dom.html.Input
 import org.scalajs.dom.raw.HTMLElement
 
+import scala.collection.mutable.ListBuffer
 import scala.xml.Node
 
 class Comment(comment2Int: Int) extends Index {
   val commentList = Var(List.empty[CommentInfo])
-  val blog = Var(DataStore.blog)
+  val blog = Var(List.empty[BlogInfo])
 
   def getComment(): Unit = {
     val url = Routes.Blog.getComment
@@ -38,22 +38,33 @@ class Comment(comment2Int: Int) extends Index {
     }
   }
 
+  def getArt(): Unit = {
+    val url = Routes.Blog.getArticle
+    val data = GetContentReq(commentUrl=DataStore.commentUrl).asJson.noSpaces
+    Http.postJsonAndParse[GetContentRsp](url, data).map{
+      case Left(error) =>
+        JsFunc.alert(s"请求数据失败")
+        println(s"some error: $error")
+      case Right(rsp) =>
+        blog := rsp.blog
+    }
+
+  }
+
   def setContent(element: HTMLElement, str: String) = {
     element.innerHTML = str
   }
 
-  val blogRx = blog.map{t =>
-    if(!t.isEmpty){
-      <div mhtml-onmount={t.head.content} style="margin-top:8px; background:#fff; padding:10px 10px 10px 10px;">
-        <div>
-          {t.head.like}<span>{t.head.comment}</span>
-        </div>
+  val blogRx = blog.map{
+    case Nil => <div></div>
+    case list =>
+      <div mhtml-onmount={(e: HTMLElement) =>setContent(e, list.head.content)} style="margin-top:8px; background:#fff; padding:10px 10px 10px 10px;">
+        <div>{DataStore.commentUrl}</div>
       </div>
-    }else <div></div>
   }
 
   val commentListRx = commentList.map{
-    case Nil => <div></div>
+    case Nil => <div>还没有评论</div>
     case list => <div>{
       <ul class="list-group">
         {list.map { l =>
@@ -68,6 +79,7 @@ class Comment(comment2Int: Int) extends Index {
   }
 
   override def render: Node = {
+    getArt()
     getComment()
     <div class="container">
       <div>

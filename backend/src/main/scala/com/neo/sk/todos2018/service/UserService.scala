@@ -6,6 +6,7 @@ import akka.http.scaladsl.server.Route
 import akka.util.Timeout
 import org.slf4j.LoggerFactory
 import com.neo.sk.todos2018.Boot.executor
+import com.neo.sk.todos2018.models.dao.BlogDao.{BlogDao, BlogUserDao}
 import com.neo.sk.todos2018.models.dao.UserDAO
 import com.neo.sk.todos2018.ptcl.UserProtocol.UserBaseInfo
 import com.neo.sk.todos2018.service.SessionBase.{SessionKeys, SessionTypeKey, ToDoListSession}
@@ -89,7 +90,8 @@ trait UserService extends ServiceUtils with SessionBase {
                 val session = ToDoListSession(UserBaseInfo(req.username), System.currentTimeMillis()).toSessionMap
                 addSession(session){
                   log.info(s"${req.username} sign up success")
-                  UserDAO.addUser(req.username, req.pwd)
+                  BlogUserDao.addUser(Some(req.username), Some(""), Some(""),Some(""), Some(""),
+                    Some(""), Some(""), Some(""), Some(""), Some(""), Some(""), Some(req.pwd))
                   complete(SuccessRsp())
                 }
               }else{

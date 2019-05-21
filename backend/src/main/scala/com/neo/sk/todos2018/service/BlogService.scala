@@ -254,7 +254,7 @@ trait BlogService extends ServiceUtils with SessionBase{
                 for(link<- v1(0).get.split("\\|")){
                   val blogs = Await.result(BlogDao.getContent(home = link), Duration.Inf).toList
                   if(blogs.length>0)
-                    blogs.foreach(blog => blogList += BlogInfo(blog._1, blog._2, blog._3.get,blog._4.get,blog._5.get, blog._6.get, blog._7.getOrElse("")))
+                    blogs.foreach(blog => blogList += BlogInfo(blog._1, blog._2, blog._3.get,blog._4.get,blog._5.get, blog._6.get, blog._7.getOrElse(""), comment2Int = blog._8))
                 }
                 complete(GetContentByPageRsp(blogList.toList.sortWith(_.time>_.time).slice((req.page-1)*10,req.page*10), blogList.length))
               }
@@ -264,11 +264,12 @@ trait BlogService extends ServiceUtils with SessionBase{
   }
 
   val sendMatrix = (path("sendMatrix") & get){
-    parameter('id.as[String]){ id =>
+    parameter('id.as[Int]){ id =>
       dealFutureResult(
-        matrixDao.getMatrix().map{ t =>
+        matrixDao.getMatrix(id).map{ t =>
           val list = ListBuffer[MatrixElement]()
           t.foreach(ele => list+=MatrixElement(ele._1, ele._2, ele._3, ele._4))
+          println(list.toList)
           complete(list.toList.asJson.noSpaces)
         }
       )
@@ -283,7 +284,7 @@ trait BlogService extends ServiceUtils with SessionBase{
       case Right(value) =>
         dealFutureResult(
           Future{
-//            println("=====get data form python=========")
+
             //fixme 数据处理
             println(value)
             complete(SuccessRsp)
@@ -324,10 +325,21 @@ trait BlogService extends ServiceUtils with SessionBase{
     )
   }
 
+  val mayLike = (path("mayLike") & get & pathEndOrSingleSlash){
+    userAuth(
+      _ =>
+        dealFutureResult(
+          BlogDao.getLikeTop10().map{p =>
+            complete(GetContentByPageRsp(p.toList.distinct.map(i => BlogInfo(i._1, i._2, i._3.getOrElse(""), i._4.getOrElse(""), i._5.getOrElse(""), i._6.getOrElse(0L), comment2Int = i._8)).take(50000).takeRight(10), p.length))
+          }
+        )
+    )
+  }
+
   val BlogRoutes: Route =
     pathPrefix("blog") {
       getContent ~ getContentByPage ~ logout ~ publishing ~ like ~
         getInfo ~ getFansInfo ~ getFollowInfo ~ getFollowByPage ~
-        sendMatrix ~ getMatrix ~ getHot ~ getComment
+        sendMatrix ~ getMatrix ~ getHot ~ getComment ~ mayLike
     }
 }

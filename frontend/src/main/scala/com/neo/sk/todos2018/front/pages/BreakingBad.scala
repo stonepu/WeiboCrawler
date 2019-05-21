@@ -137,10 +137,7 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
     dom.window.location.hash = s"#/comment/$comment2Int"
   }
 
-  def storeBlog(content: String, nickname: String="", like: String,
-                comment: String, commentUrl: String): Unit = {
-    DataStore.blog.clear()
-    DataStore.blog += DataStore.BlogInfo(content, nickname, like, comment)
+  def storeBlog(commentUrl: String): Unit = {
     DataStore.commentUrl = commentUrl
   }
 
@@ -166,12 +163,15 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
         println(s"some error: $error")
       case Right(rsp) =>
         contentList := rsp.blog
+        pageNum = if(rsp.amount%pageLimit == 0) rsp.amount/pageLimit else (rsp.amount/pageLimit+1)
     }
   }
 
   def changePage(show: Int, nickname: String, page: Int): Unit = {
     if(show == 1) followByPage(nickname, page)
+    else if(show == 2) mayLike()
     else if(show == 3) getContentByPage(nickname, page)
+    else if(show == 4) getRecommendation()
   }
 
   def getHot(): Unit = {
@@ -183,6 +183,23 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
       case Right(rsp) =>
         hotList := rsp.hotList
     }
+  }
+
+  def mayLike(): Unit = {
+    show = 2
+    val url = Routes.Blog.mayLike
+    Http.getAndParse[GetContentByPageRsp](url).map{
+      case Left(error) =>
+        JsFunc.alert(s"请求数据失败")
+        println(s"some error: $error")
+      case Right(rsp) =>
+        contentList := rsp.blog
+        pageNum = 1
+    }
+  }
+
+  def getRecommendation(): Unit = {
+    show = 4
   }
 
   val left: Var[Node] = Var(
@@ -205,6 +222,10 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
     </div>
   )
 
+  def getCommentBtn(comment: String, commentUrl: String, comment2Int: Int) = {
+    <button type="button" class="btn btn-link" onclick={()=>storeBlog(commentUrl); move2Comment(comment2Int)}>[评论{comment}]</button>
+  }
+
   def dealNickname(nickname: String): String = {
     val s = if(nickname.isEmpty) "" else s"<a href=${"\"#/move/"+nickname+"\""}><font size=${"\"3\""}>$nickname</font></a>"
     s
@@ -212,11 +233,12 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
 
   val contentListRx = contentList.map{
     case Nil => <div style="background:#fff">他还没有发过博客</div>
-    case list => <div>{list.distinct.map{ l =>
+    case list => <div>{list.distinct.map{l =>
         <div mhtml-onmount={(e: HTMLElement) =>setContent(e, dealNickname(l.author)+l.content)} style="margin-top:8px; background:#fff; padding:10px 10px 10px 10px;">
           <div>
             <button type="button" class="btn btn-link" onclick={()=>like(l.commentUrl, l.like)}>[赞{l.like}]</button>
-            <button type="button" class="btn btn-link" onclick={()=>storeBlog(dealNickname(l.author)+l.content, like=l.like, comment=l.comment, commentUrl=l.commentUrl); move2Comment(l.comment2Int)}>[评论{l.comment}]</button>
+            {getCommentBtn(l.comment, l.commentUrl, l.comment2Int)}
+            <!--<button type="button" class="btn btn-link" onclick={()=>storeBlog(dealNickname(l.author)+l.content, like=l.like, comment=l.comment, commentUrl=l.commentUrl); move2Comment(l.comment2Int)}>[评论{l.comment}]</button>-->
             <span>{TimeTool.dateFormatDefault(l.time)}</span>
           </div>
         </div>
@@ -282,8 +304,9 @@ class BreakingBad(home: String, isHome: Boolean=true, nickname: String="") exten
     <div>
       <ul class="nav nav-tabs">
         <li role="presentation"><a href="javascript:void(0)" onclick={()=>followByPage(home)}>关注</a></li>
-        <li role="presentation"><a href="javascript:void(0)" onclick={()=>}>可能喜欢</a></li>
+        <li role="presentation"><a href="javascript:void(0)" onclick={()=>mayLike()}>平台热度排行榜</a></li>
         <li role="presentation"><a href="javascript:void(0)" onclick={()=>getContentByPage(home,1)}>我的内容</a></li>
+        <li role="presentation"><a href="javascript:void(0)" onclick={()=>mayLike()}>推荐内容</a></li>
       </ul>
     </div>
   )

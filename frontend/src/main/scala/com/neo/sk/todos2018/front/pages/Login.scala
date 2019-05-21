@@ -1,20 +1,17 @@
 package com.neo.sk.todos2018.front.pages
 
-import com.neo.sk.todos2018.front.utils.{Http, JsFunc}
+import com.neo.sk.todos2018.front.utils.{DataStore, Http, JsFunc}
 import com.neo.sk.todos2018.front.{Index, Routes}
 import com.neo.sk.todos2018.shared.ptcl.SuccessRsp
 import org.scalajs.dom
 import org.scalajs.dom.html.Input
 import com.neo.sk.todos2018.shared.ptcl.UserProtocol._
-import com.neo.sk.todos2018.shared.ptcl.ToDoListProtocol._
-import java.net.{URLDecoder, URLEncoder}
 
 import io.circe.generic.auto._
 import io.circe.syntax._
 import io.circe.parser._
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import com.neo.sk.todos2018.front.styles.LoginStyles._
 import mhtml.Var
 
 import scala.util.{Failure, Success}
@@ -26,7 +23,6 @@ object Login extends Index{
   //val blog = new BreakingBad("")
   def login() : Unit = {
     val username=dom.window.document.getElementById("username").asInstanceOf[Input].value
-    //blog.blogName = username
     val password=dom.window.document.getElementById("password").asInstanceOf[Input].value
     val data = UserLoginReq(username, password).asJson.noSpaces
     Http.postJsonAndParse[SuccessRsp](Routes.User.login, data).map{
@@ -36,6 +32,7 @@ object Login extends Index{
        case Right(rsp) =>
          if(rsp.errCode == 0) {
            JsFunc.alert("登录成功！")
+           DataStore.home = username
            dom.window.location.hash = s"#/Blog/${username}"
          } else if(rsp.errCode == 100102){
            JsFunc.alert(s"用户名不存在!")
@@ -44,22 +41,6 @@ object Login extends Index{
          } else {
            JsFunc.alert("登录失败，请稍后再试！")
          }
-
-/*      case Right(rsp) =>
-        if(rsp.errCode == 0) {
-          JsFunc.alert("登录成功！")
-          dom.window.location.hash = s"#/Blog/${username}"
-        } else if(rsp.errCode == 100102){
-          JsFunc.alert(s"用户名不存在!")
-        } else if(rsp.errCode == 100103){
-          JsFunc.alert(s"密码不正确！")
-        } else {
-          JsFunc.alert("登录失败，请稍后再试！")
-        }
-
-      case Left(error) =>
-        println(s"login error: $error")
-        JsFunc.alert("登录失败，请输入正确的水木账号密码！")*/
     }
   }
 
@@ -109,7 +90,7 @@ object Login extends Index{
 
   def render: xml.Node = {
     <div>
-      <div class="heads">BreakingBad</div>
+      <div class="heads">微博北邮社区</div>
       <div class="container">
         <div class="col-md-4 col-md-offset-4" style="border:1px solid #cccccc; margin-top:15px">
           <div style="padding:2rem 2rem 2rem 2rem">

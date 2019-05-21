@@ -15,7 +15,7 @@ import temp.douban.crawl
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.collection.mutable
 import concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Random, Success}
 import com.neo.sk.todos2018.coreblog.FollowActor
 import com.neo.sk.todos2018.coreblog.InfoActor.InfoCommand
@@ -26,7 +26,8 @@ object Spider {
   private val log = LoggerFactory.getLogger(this.getClass)
   sealed trait SpiderCommand
 
-  private case object TimerKey
+  private case object TimerKey extends SpiderCommand
+  private case object Timers extends SpiderCommand
   private case object TimeOutMsg extends SpiderCommand
 
 
@@ -80,23 +81,20 @@ object Spider {
     Behaviors.receive[SpiderCommand]{ (ctx, msg) =>
       msg match {
         case StartWork =>
-          UrlSaveDao.getUrl().onComplete{t =>
-            val urlList = t.get.toList
-            if(urlList.isEmpty){
-              var str = "www."
-              hashUrl2Get.enqueue(url)
-              ctx.self ! FetchTask
-              /*crawl.fetch(url).onComplete{t =>
-                str = t.toString
-                ctx.self ! parseMyHome(str)
-              }*/
-            }else{
-              urlList.foreach(p=> hashUrl2Get.enqueue(p))
-              ctx.self ! FetchTask
-            }
+          timer.startPeriodicTimer(Timers, UpdateUrl, 15.seconds)
+          timer.startPeriodicTimer(TimerKey, FetchTask, 4.seconds)
+          val urlList = Await.result(UrlSaveDao.getUrl(), Duration.Inf)
+          if(urlList.isEmpty){
+            hashUrl2Get.enqueue(url)
+            ctx.self ! FetchTask
+            /*crawl.fetch(url).onComplete{t =>
+              str = t.toString
+              ctx.self ! parseMyHome(str)
+            }*/
+          }else{
+            urlList.foreach(p=> hashUrl2Get.enqueue(p))
+            ctx.self ! FetchTask
           }
-          timer.startPeriodicTimer(TimerKey, UpdateUrl, 1.minutes)
-          timer.startPeriodicTimer(TimerKey, FetchTask, 3.seconds)
           Behaviors.same
 
         case UpdateUrl=>
@@ -130,6 +128,7 @@ object Spider {
           Behaviors.same
 
         case FetchTask =>
+          println("====spider coming to fetch task====")
           if(hashUrl2Get.length > 0){
             var nextUrl = hashUrl2Get.dequeue()
             while(hashSet.contains(nextUrl)){
@@ -155,23 +154,24 @@ object Spider {
           crawl.fetch(url).onComplete{t =>
             val html = t.get
             if(html.length < 10){
-              Thread.sleep(Random.nextInt(6)*1000 + 4000)
+              Thread.sleep(Random.nextInt(6)*1000 + 3000)
               ctx.self ! Distribution(url)
             }else{
               val isBupt = if(html.contains("北邮") || html.contains("北京邮电大学") || html.contains("BUPT")) true else false
-              val urlMap = crawl.get4Url(html)
-              if(needStop == true) {
-                Thread.sleep(20000)
-                needStop = false
+              val randon = Random.nextInt(10)
+//              if(randon>7 || isBupt){
+              if(true){
+                val urlMap = crawl.get4Url(html)
+                if(needStop == true) {
+                  Thread.sleep(20000)
+                  needStop = false
+                }
+                Thread.sleep(Random.nextInt(4)*1000+4000)
+                follow ! FollowActor.FetchUrl(urlMap("follow"), url, isBupt)
+                info ! InfoActor.FetchUrl(urlMap("info"))
+                Thread.sleep(Random.nextInt(4)*1000+2000)
+                fans ! FansActor.FetchUrl(urlMap("fans"), url, isBupt)
               }
-              //fixme here 给各个actor发url
-              Thread.sleep(Random.nextInt(4)*1000+2000)
-              follow ! FollowActor.FetchUrl(urlMap("follow"), url)
-              //Thread.sleep(Random.nextInt(6)*1000+2000)
-              info ! InfoActor.FetchUrl(urlMap("info"))
-              //println(urlMap("info")+" infoUrl start work!")
-              Thread.sleep(Random.nextInt(4)*1000+2000)
-              fans ! FansActor.FetchUrl(urlMap("fans"), url, isBupt)
             }
           }
           Behaviors.same

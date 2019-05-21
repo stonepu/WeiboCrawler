@@ -55,6 +55,7 @@ object Dependencies {
   val spray = "io.spray" %% "spray-json" % "1.3.2"
   val jsoup = "org.jsoup" % "jsoup" % "1.11.3"
   val apache = "org.apache.httpcomponents" % "httpclient" % "4.5.5"
+  val librec = "net.librec" % "librec-core" % "2.0.0"
 
   val backendDependencies =
     Dependencies.akkaSeq ++
@@ -76,7 +77,8 @@ object Dependencies {
         Dependencies.ehcache,
         Dependencies.spray,
         Dependencies.jsoup,
-        Dependencies.apache
+        Dependencies.apache,
+        Dependencies.librec
       )
 
 

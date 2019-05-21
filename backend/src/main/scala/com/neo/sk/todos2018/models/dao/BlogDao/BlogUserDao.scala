@@ -7,17 +7,20 @@ import com.neo.sk.todos2018.Boot.executor
 import com.neo.sk.todos2018.common.AppSettings
 import org.slf4j.LoggerFactory
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.io.StdIn
+import scala.collection.mutable
 
 object BlogUserDao {
   private val log = LoggerFactory.getLogger(this.getClass)
 
-  def addUser(nickname: Option[String], homeUrl: Option[String],
-              imageUrl: Option[String], gender: Option[String],
-              certification: Option[String], introduction: Option[String],
-              region: Option[String], birth: Option[String],
-              photo: Option[String], follow: Option[String],
-              fans: Option[String], password: Option[String] = Some("123")) = {
+  def addUser(nickname: Option[String]=Some(""), homeUrl: Option[String],
+              imageUrl: Option[String]=Some(""), gender: Option[String]=Some(""),
+              certification: Option[String]=Some(""), introduction: Option[String]=Some(""),
+              region: Option[String]=Some(""), birth: Option[String]=Some(""),
+              photo: Option[String]=Some(""), follow: Option[String]=Some(""),
+              fans: Option[String]=Some(""), password: Option[String] = Some("123")) = {
     val addUser =
       tBloguser += rBloguser(nickname, homeUrl, imageUrl, gender, certification, introduction,
            region, birth, photo, follow, fans, password, -1)
@@ -75,15 +78,14 @@ object BlogUserDao {
 
   def updateFollow(home: String, follow: String) = {
     //println(s"====== $home 's follow 更新中")
-    getFollow(home = home).onComplete{ t=>
-      val list = t.get.toList
-      if(list.length==0){
-        log.warn(s"follow用户 ${home} 不存在")
-      } else if(list.head.getOrElse("None") == "None"){
-        db.run(tBloguser.filter(_.homeurl === home).map(p => p.follow).update(Some(follow)))
-      } else{
-        db.run(tBloguser.filter(_.homeurl === home).map(p => p.follow).update(Some((list.head.get+follow).split("\\|").toList.distinct.mkString("|"))))
-      }
+    val user = Await.result(getFollow(home = home), Duration.Inf)
+    val list = user.toList
+    if(list.length==0){
+      log.warn(s"follow用户 ${home} 不存在")
+    } else if(list.head.getOrElse("None") == "None"){
+      db.run(tBloguser.filter(_.homeurl === home).map(p => p.follow).update(Some(follow)))
+    } else{
+      db.run(tBloguser.filter(_.homeurl === home).map(p => p.follow).update(Some((list.head.get+follow).split("\\|").toList.distinct.mkString("|"))))
     }
   }
 
@@ -107,6 +109,15 @@ object BlogUserDao {
     db.run(num)
   }
 
+  def getUser() = {
+    db.run(tBloguser.map(p => p.homeurl).result)
+  }
+
+  def dltUser(homeUrl: String) = {
+    db.run(tBloguser.filter(_.homeurl === homeUrl).delete)
+  }
+
+
 /*
   def urlListUserInfo(nickname: String,home: List[String]) = {
     getFans(nickname = nickname)
@@ -128,5 +139,7 @@ object BlogUserDao {
 
     StdIn.readLine()
   }
+
+
 
 }

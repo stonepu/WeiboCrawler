@@ -86,4 +86,19 @@ object BlogDao {
     db.run(num)
   }
 
+  def getLikeTop10() = {
+    val list = tBlog.sortBy(_.like.desc).map(a => (a.content, a.commenturl, a.like, a.forward,
+      a.comment, a.time, a.author, a.item2int)).result
+    db.run(list)
+  }
+
+  def getBlog() = {
+    db.run(tBlog.map(p => (p.homeurl, p.commenturl)).result)
+  }
+
+  def dltBlog(homeUrl: String) = {
+    db.run(tBlog.filter(_.homeurl === homeUrl).delete)
+  }
+
+
 }

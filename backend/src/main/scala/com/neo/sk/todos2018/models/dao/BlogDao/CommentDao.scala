@@ -29,4 +29,12 @@ object CommentDao {
     db.run(comment)
   }
 
+  def getComment() = {
+    db.run(tComment.map(t => (t.reviewer, t.commenturl)).result)
+  }
+
+  def dltComment(homeUrl: String) = {
+    db.run(tComment.filter(_.reviewer === homeUrl).delete)
+  }
+
 }

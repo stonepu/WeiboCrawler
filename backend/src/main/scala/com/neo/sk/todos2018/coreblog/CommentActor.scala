@@ -27,6 +27,7 @@ object CommentActor {
 
   case object StartWork extends CommentCommand
   case object FinishWork extends CommentCommand
+  case object Print extends CommentCommand
   case class WorkOtherPage(urlQueue: mutable.Queue[(String, Int)], isIncrement: Boolean=false, timeDao: Long=0) extends CommentCommand
   case class ParseHtml( html: String) extends CommentCommand
 
@@ -54,6 +55,11 @@ object CommentActor {
       msg match {
         case StartWork =>
           ctx.self ! FetchUrl
+          timer.startPeriodicTimer(TimeOutMsg, Print, 10.seconds)
+          Behaviors.same
+
+        case Print =>
+          println(s"======hash's length: ${hash.length} =======")
           Behaviors.same
 
         case FetchUrl =>
@@ -85,7 +91,7 @@ object CommentActor {
 
         case GetRemainingPageUrl(url, page, isIncrement, timeDao) =>
           if(page > 1){
-            val pages = if(page > 100) 100 else page
+            val pages = if(page > 10) 10 else page
             val urlQueue: mutable.Queue[(String, Int)] = mutable.Queue()
             for(i<- 2 to pages){
               val urlPage = if(url.contains("#cmtfrm")) url.replace("#cmtfrm", "") + s"&page=${i}"
@@ -105,22 +111,24 @@ object CommentActor {
 
         case WorkOtherPage(urlQueue, isIncrement, timeDao) =>
           if(urlQueue.length > 0){
-            val urlTemp = hash.dequeue()
+            println("=====working on other page=====")
+            val urlTemp = urlQueue.dequeue()
+            println(urlTemp._1)
             crawl.fetch(urlTemp._1).onComplete{t=>
               val html = t.get
               if(html.length < 10){
                 log.error(s"get url $urlTemp error!,重新放入队列")
                 if(urlTemp._2 > 2) invalidSet += urlTemp._1
-                else hash.enqueue((urlTemp._1, urlTemp._2+1))
+                else urlQueue.enqueue((urlTemp._1, urlTemp._2+1))
               }else{
                 if(isIncrement) crawl.parseIncrementalComment(html, urlTemp._1, timeDao)
                 else crawl.parseComment(html, urlTemp._1)
               }
             }
             if(urlQueue.length > 0){
-              Thread.sleep(Random.nextInt(6)*1000 + 4000)
+              Thread.sleep(Random.nextInt(3)*1000 + 2000)
               ctx.self ! WorkOtherPage(urlQueue, isIncrement)
-            }else ctx.self ! FinishWork
+            }else ctx.self ! FetchUrl
           }
           Behaviors.same
 

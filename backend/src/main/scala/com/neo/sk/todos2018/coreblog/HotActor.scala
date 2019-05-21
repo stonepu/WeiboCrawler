@@ -41,8 +41,8 @@ object HotActor {
     Behaviors.receive[HotCommand]{(ctx, msg) =>
       msg match {
         case StartWork =>
-          ctx.self ! Fetch
-          timer.startPeriodicTimer(TimeOutMsg, Fetch, 30.minutes)
+          //ctx.self ! Fetch
+          //timer.startPeriodicTimer(TimeOutMsg, Fetch, 1.minutes)
           Behaviors.same
 
         case Fetch =>

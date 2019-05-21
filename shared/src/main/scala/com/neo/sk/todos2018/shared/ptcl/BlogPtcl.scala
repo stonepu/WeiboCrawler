@@ -5,7 +5,8 @@ object BlogPtcl {
   case class CommonRsp(errCode: Int=0,
                        msg: String="ok")
   case class GetContentReq(
-                          nickname: String
+                          nickname: String="",
+                          commentUrl: String=""
                           )
 
   case class GetContentRsp(

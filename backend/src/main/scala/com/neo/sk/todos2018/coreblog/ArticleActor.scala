@@ -26,7 +26,7 @@ object ArticleActor {
 
   case object StartWork extends ArticleCommand
   case object FinishTask extends ArticleCommand
-  case object WorkOtherPage extends ArticleCommand
+  case class WorkOtherPage(otherPage: mutable.Queue[(String, Int)]) extends ArticleCommand
   case class ParseHtml( html: String) extends ArticleCommand
   case class FetchUrl(url: String) extends  ArticleCommand
   case class ChildDead(str: String) extends ArticleCommand
@@ -36,13 +36,12 @@ object ArticleActor {
     Behaviors.setup[ArticleCommand]{ctx =>
       Behaviors.withTimers{implicit timer =>
         timer.startSingleTimer(TimeOutMsg, StartWork, 5.seconds)
-        val hash: mutable.Queue[String] = mutable.Queue()
-        idle(url,hash, commentActor)
+        idle(url, commentActor)
       }
     }
   }
 
-  def idle(url: String, hash: mutable.Queue[String],commentActor: ActorRef[CommentCommand]): Behavior[ArticleCommand] = {
+  def idle(url: String, commentActor: ActorRef[CommentCommand]): Behavior[ArticleCommand] = {
     Behaviors.receive[ArticleCommand]{(ctx, msg) =>
       msg match {
         case StartWork =>
@@ -69,31 +68,33 @@ object ArticleActor {
 
         case GetRemainingPageUrl(url, page) =>
           if(page > 1){
-            val pages = if(page > 100) 100 else page
+            val pages = if(page > 5) 5 else page
+            val otherPage: mutable.Queue[(String, Int)] = mutable.Queue()
             for(i<- 2 to pages){
               val urlPage = url + s"?page=${i}"
-              hash.enqueue(urlPage)
+              otherPage.enqueue((urlPage, 0))
             }
-            ctx.self ! WorkOtherPage
+            ctx.self ! WorkOtherPage(otherPage)
           }
           else ctx.self ! FinishTask
           Behaviors.same
 
-        case WorkOtherPage =>
-          if(hash.length>0){
-            val urlTemp = hash.dequeue()
-            crawl.fetch(urlTemp).onComplete{html=>
+        case WorkOtherPage(otherPage) =>
+          if(otherPage.length>0){
+            val urlTemp = otherPage.dequeue()
+            crawl.fetch(urlTemp._1).onComplete{html=>
               if(html.toString.length < 10){
-                log.error(s"======get url $urlTemp error!,重新放入队列=======")
-                hash.enqueue(urlTemp)
+                if(urlTemp._2<3){
+                  otherPage.enqueue((urlTemp._1, urlTemp._2+1))
+                }
               }else{
-                val commentUList = crawl.parseAtcl(urlTemp, html.toString)
+                val commentUList = crawl.parseAtcl(urlTemp._1, html.toString)
                 commentActor ! CommentActor.GetUrl(commentUList)
               }
             }
-            if(hash.length>0){
-              Thread.sleep(Random.nextInt(4)*1000 + 3000)
-              ctx.self ! WorkOtherPage
+            if(otherPage.length>0){
+              Thread.sleep(Random.nextInt(4)*1000 + 10000)
+              ctx.self ! WorkOtherPage(otherPage)
             } else{
               ctx.self ! FinishTask
             }
